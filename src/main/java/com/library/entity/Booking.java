@@ -16,11 +16,12 @@ import java.util.UUID;
 @Entity @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "booking")
 public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private UUID bookingId;
 
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;

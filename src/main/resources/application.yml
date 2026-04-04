@@ -4,3 +4,14 @@ spring:
     username: postgres
     password: root
     driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+minio:
+  url: http://localhost:9000
+  access-key: minio
+  secret-key: minio123
+  bucket: listing-images

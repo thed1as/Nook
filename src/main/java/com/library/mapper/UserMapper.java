@@ -10,9 +10,6 @@ import org.mapstruct.Mapping;
 public interface UserMapper {
     UserResponse toUserResponse(User user);
 
-    @Mapping(target = "id", ignore = true)
-    User toUser(UserResponse userResponse);
-
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "userId", ignore = true)
     User toUser(UserRequest userRequest);
 }

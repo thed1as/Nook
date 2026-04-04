@@ -12,11 +12,11 @@ import java.util.UUID;
 @Entity @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "Location", uniqueConstraints = {@UniqueConstraint(name = "UniqueAddress", columnNames = {"country", "city", "address"})})
+@Table(name = "location", uniqueConstraints = {@UniqueConstraint(name = "UniqueAddress", columnNames = {"country", "city", "address"})})
 public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private UUID locationId;
 
     @Column(nullable = false)
     private String country;
@@ -30,4 +30,16 @@ public class Location {
 //    Connections
     @OneToMany(mappedBy = "location")
     private List<Listing> listings;
+
+//    helper methods
+//    listing
+    public void addListing(Listing listing) {
+        listings.add(listing);
+        listing.setLocation(this);
+    }
+
+    public void removeListing(Listing listing) {
+        listings.remove(listing);
+        listing.setLocation(null);
+    }
 }

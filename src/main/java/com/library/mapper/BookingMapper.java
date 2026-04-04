@@ -10,9 +10,6 @@ import org.mapstruct.Mapping;
 public interface                                                                                                                        BookingMapper {
     BookingResponse toBookingResponse(Booking booking);
 
-    @Mapping(target = "id", ignore = true)
-    Booking toBooking(BookingResponse bookingResponse);
-
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "bookingId", ignore = true)
     Booking toBooking(BookingRequest bookingRequest);
 }

@@ -1,8 +1,10 @@
 package com.library.dto.ListingImage;
 
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class ListingImageRequest {
-    private String url;
+    private String altText;
+    private int order;
 }

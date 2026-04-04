@@ -12,10 +12,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Table(name = "reviews")
 public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private UUID reviewId;
 
     private BigDecimal rating;
 
