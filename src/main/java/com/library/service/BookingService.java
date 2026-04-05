@@ -10,6 +10,7 @@ import com.library.mapper.BookingMapper;
 import com.library.repository.BookingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,9 @@ public class BookingService {
     private final UserService userService;
     private final ListingService listingService;
     private final BookingMapper bookingMapper;
+
+    @Value("${app.booking.cancellation-window-days}")
+    private long cancellationWindowDays;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest, UUID userId) {
@@ -47,8 +51,8 @@ public class BookingService {
             throw new IllegalStateException("Listing is already occupied");
         }
         Long days = ChronoUnit.DAYS.between(
-                bookingRequest.getCheckInDate(),
-                bookingRequest.getCheckOutDate());
+                bookingRequest.getCheckInDate().toLocalDate(),
+                bookingRequest.getCheckOutDate().toLocalDate());
 
         BigDecimal totalPrice = listing.getPricePerNight().multiply(BigDecimal.valueOf(days));
 
@@ -67,11 +71,14 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse cancelBooking(BookingRequest bookingRequest, UUID userId) {
-        Booking booking = bookingRepository.findByListingIdAndUserId(bookingRequest.getListingId(), userId)
+    public BookingResponse cancelBooking(BookingRequest bookingRequest, UUID bookingId, UUID userId) {
+        Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
                         + bookingRequest.getListingId()));
-        if(LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(2)) &&
+        if(!booking.getUser().getUserId().equals(userId)) {
+            throw new IllegalStateException("You is not owner of booking");
+        }
+        if(LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) &&
                 booking.getStatus().equals(Status.PENDING)) {
             throw new IllegalStateException("Too late to cancel booking");
         }
@@ -81,17 +88,20 @@ public class BookingService {
         return bookingMapper.toBookingResponse(booking);
     }
 
+    @Transactional(readOnly = true)
     public BookingResponse getBookingById(UUID bookingId) {
         return bookingRepository.findById(bookingId)
                 .map(bookingMapper::toBookingResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"));
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with id: " + bookingId));
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> getUserBookings(UUID userId) {
         return bookingRepository.findUserBookingsById(userId)
                 .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public boolean isAvailable(UUID listingId, LocalDateTime in, LocalDateTime out) {
         return !bookingRepository.isListOccupied(listingId, in, out);
     }

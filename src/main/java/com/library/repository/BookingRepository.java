@@ -27,4 +27,5 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findUserBookingsById(UUID userId);
 
     UUID listing(Listing listing);
+
 }

@@ -32,9 +32,10 @@ public class LocationService {
         }
 
         Location location = new Location();
-        location.setCountry(locationRequest.getCountry());
-        location.setCity(locationRequest.getCity());
-        location.setAddress(locationRequest.getAddress());
+        location.setCountry(locationRequest.getCountry().toLowerCase());
+        location.setCity(locationRequest.getCity().toLowerCase());
+        location.setAddress(locationRequest.getAddress().toLowerCase());
+        locationRepository.save(location);
         return location;
     }
 

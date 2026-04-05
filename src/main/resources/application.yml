@@ -15,3 +15,8 @@ minio:
   access-key: minio
   secret-key: minio123
   bucket: listing-images
+
+app:
+  booking:
+    cancellation-window-days: 2
+

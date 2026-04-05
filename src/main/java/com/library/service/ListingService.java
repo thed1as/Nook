@@ -13,6 +13,7 @@ import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,7 +36,6 @@ public class ListingService {
                                          List<MultipartFile> files,
                                          UUID userId) {
         User user = userService.getUserOrThrow(userId);
-
         Listing listing = Listing.builder()
                 .title(listingRequest.getListingTitle())
                 .description(listingRequest.getDescription())
@@ -60,8 +60,14 @@ public class ListingService {
         listing.addListingImage(images);
         user.addListing(listing);
         loc.addListing(listing);
-
-        listingRepository.save(listing);
+        try {
+            listingRepository.save(listing);
+        } catch (DataAccessException e) {
+            for(ListingImage image : images) {
+                minioService.deleteFile(image.getUrl());
+            }
+            throw new RuntimeException("Failed to save listing, cleaning up files", e);
+        }
 
         return listingMapper.toListingResponse(listing);
     }
@@ -97,7 +103,12 @@ public class ListingService {
 //    set role admin
     @Transactional
     public void deleteListingById(UUID listingId) {
-        listingRepository.deleteById(listingId);
+        Listing listing = listingRepository.findById(listingId).orElseThrow(EntityNotFoundException::new);
+        List<ListingImage> images = listing.getListingImages();
+        for(ListingImage image : images) {
+            minioService.deleteFile(image.getUrl());
+        }
+        listingRepository.delete(listing);
     }
 
     @Transactional(readOnly = true)
