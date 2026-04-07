@@ -32,7 +32,7 @@ public class BookingService {
     private long cancellationWindowDays;
 
     @Transactional
-    public BookingResponse createBooking(BookingRequest bookingRequest, UUID userId) {
+    public BookingResponse createBooking(BookingRequest bookingRequest, String email) {
         if(!bookingRequest.getCheckOutDate().isAfter(bookingRequest.getCheckInDate())) {
             throw new IllegalStateException("Invalid date range");
         }
@@ -41,7 +41,7 @@ public class BookingService {
             throw new IllegalStateException("Check-in in the past");
         }
 
-        User user = userService.getUserOrThrow(userId);
+        User user = userService.getUserByEmail(email);
         Listing listing = listingService.getListingOrThrow(bookingRequest.getListingId());
 
         if(bookingRepository.isListOccupied(
@@ -71,11 +71,11 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse cancelBooking(BookingRequest bookingRequest, UUID bookingId, UUID userId) {
+    public BookingResponse cancelBooking(UUID bookingId, String email) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
-                        + bookingRequest.getListingId()));
-        if(!booking.getUser().getUserId().equals(userId)) {
+                        + bookingId));
+        if(!booking.getUser().getEmail().equals(email)) {
             throw new IllegalStateException("You is not owner of booking");
         }
         if(LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) &&
@@ -98,6 +98,12 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingResponse> getUserBookings(UUID userId) {
         return bookingRepository.findUserBookingsById(userId)
+                .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<BookingResponse> getListingBookings(UUID listingId) {
+        return bookingRepository.findListingBookingsById(listingId)
                 .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
     }
 

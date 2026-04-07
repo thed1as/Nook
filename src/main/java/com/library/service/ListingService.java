@@ -1,6 +1,5 @@
 package com.library.service;
 
-import com.library.dto.ListingImage.ListingImageRequest;
 import com.library.dto.listing.ListingRequest;
 import com.library.dto.listing.ListingResponse;
 import com.library.dto.listing.UpdateListingRequest;
@@ -21,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +34,8 @@ public class ListingService {
     @Transactional
     public ListingResponse createListing(@Valid ListingRequest listingRequest,
                                          List<MultipartFile> files,
-                                         UUID userId) {
-        User user = userService.getUserOrThrow(userId);
+                                         String email) {
+        User user = userService.getUserByEmail(email);
         Listing listing = Listing.builder()
                 .title(listingRequest.getListingTitle())
                 .description(listingRequest.getDescription())
@@ -74,10 +74,10 @@ public class ListingService {
 
     @Transactional
     public ListingResponse updateListing(UpdateListingRequest req,
-                                         UUID userId,
+                                         String email,
                                          UUID listingId) {
         Listing listing = getListingOrThrow(listingId);
-        if(!listing.getUser().getUserId().equals(userId)) {
+        if(!listing.getUser().getEmail().equals(email)) {
             throw new IllegalStateException("Not your listing");
         }
 
@@ -121,5 +121,11 @@ public class ListingService {
     public Listing getListingOrThrow(UUID listingId) {
         return listingRepository.findById(listingId)
                 .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
+    }
+
+    public List<ListingResponse> getAll() {
+        return listingRepository.findAll()
+                .stream().map(listingMapper::toListingResponse)
+                .collect(Collectors.toList());
     }
 }

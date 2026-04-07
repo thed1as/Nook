@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.dto.listing.ListingResponse;
 import com.library.dto.user.UserRequest;
 import com.library.dto.user.UserResponse;
 import com.library.entity.User;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -60,5 +62,12 @@ public class UserService {
     public User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId).orElseThrow(
                 () -> new EntityNotFoundException("User not found with id:" + userId));
+    }
+
+    @Transactional(readOnly = true)
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(
+                () -> new EntityNotFoundException("User not found with email:" + email)
+        );
     }
 }

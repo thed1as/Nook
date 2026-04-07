@@ -14,7 +14,7 @@ import java.util.UUID;
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END " +
             "FROM Booking b " +
-            "WHERE b.listing.id = :listingId " +
+            "WHERE b.listing.listingId = :listingId " +
             "AND b.status = 'CONFIRMED' " +
             "AND b.checkInDate < :newCheckOut " +
             "AND b.checkOutDate > :newCheckIn")
@@ -28,4 +28,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     UUID listing(Listing listing);
 
+    @Query("SELECT b FROM Booking b WHERE b.listing.listingId = :bookingId")
+    List<Booking> findListingBookingsById(UUID listingId);
 }
