@@ -2,7 +2,7 @@ package com.library.dto.listing;
 
 import com.library.dto.ListingImage.ListingImageRequest;
 import com.library.dto.location.LocationRequest;
-//import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -16,7 +16,7 @@ public class ListingRequest {
     private String description;
     @NotBlank(message = "listing price per night is required")
     private BigDecimal pricePerNight;
-//    @Schema(description = "Listing Images")
+    @Schema(description = "Listing Images")
     @NotBlank(message = "listing image is required")
     private List<ListingImageRequest> listingImageRequests;
     @NotBlank(message = "listing location is required")
