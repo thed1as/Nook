@@ -14,9 +14,6 @@ spring:
       path: /api-docs
     swagger-ui:
       path: /swagger
-  web:
-    mvc:
-      throw-exception-if-no-handler-found: true
 
 minio:
   url: http://localhost:9000
