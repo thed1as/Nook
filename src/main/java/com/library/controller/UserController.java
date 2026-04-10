@@ -37,7 +37,7 @@ public class UserController {
         return ResponseEntity.ok(ur);
     }
 
-//    @Operation(summary = "Find users listings by id")
+    @Operation(summary = "Find users listings by id")
     @GetMapping("/users/{id}/listings")
     public ResponseEntity<List<ListingResponse>> getUserListings(@PathVariable UUID id) {
         List<ListingResponse> lr = listingService.getUsersListings(id);
