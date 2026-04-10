@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.antlr.v4.runtime.misc.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,8 +29,8 @@ public class Location {
     private String address;
 
 //    Connections
-    @OneToMany(mappedBy = "location")
-    private List<Listing> listings;
+    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Listing> listings = new ArrayList<>();
 
 //    helper methods
 //    listing

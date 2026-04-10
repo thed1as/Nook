@@ -3,11 +3,13 @@ package com.library.service;
 import com.library.dto.listing.ListingRequest;
 import com.library.dto.listing.ListingResponse;
 import com.library.dto.listing.UpdateListingRequest;
+import com.library.dto.location.LocationRequest;
 import com.library.entity.Listing;
 import com.library.entity.ListingImage;
 import com.library.entity.Location;
 import com.library.entity.User;
 import com.library.mapper.ListingMapper;
+import com.library.mapper.LocationMapper;
 import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -30,10 +32,10 @@ public class ListingService {
     private final ListingMapper listingMapper;
     private final LocationService locationService;
     private final MinioService minioService;
+    private final LocationMapper locationMapper;
 
     @Transactional
-    public ListingResponse createListing(@Valid ListingRequest listingRequest,
-                                         List<MultipartFile> files,
+    public ListingResponse createListing(ListingRequest listingRequest,
                                          String email) {
         User user = userService.getUserByEmail(email);
         Listing listing = Listing.builder()
@@ -45,10 +47,21 @@ public class ListingService {
         Location loc = locationService
                 .createLocationOrGet(listingRequest.getLocationRequest());
 
-        List<ListingImage> images = new ArrayList<>();
 
-        for(MultipartFile file : files) {
-            String url = minioService.uploadFile(file);
+        user.addListing(listing);
+        loc.addListing(listing);
+
+        listingRepository.save(listing);
+
+        return listingMapper.toListingResponse(listing);
+    }
+
+    @Transactional
+    public ListingResponse addImageToListing(UUID listingId, List<MultipartFile> file) {
+        Listing listing = getListingOrThrow(listingId);
+        List<ListingImage> images = new ArrayList<>();
+        for(MultipartFile fileItem : file) {
+            String url = minioService.uploadFile(fileItem);
 
             ListingImage image = new ListingImage();
             image.setUrl(url);
@@ -56,10 +69,8 @@ public class ListingService {
 
             images.add(image);
         }
-
         listing.addListingImage(images);
-        user.addListing(listing);
-        loc.addListing(listing);
+
         try {
             listingRepository.save(listing);
         } catch (DataAccessException e) {
@@ -68,7 +79,6 @@ public class ListingService {
             }
             throw new RuntimeException("Failed to save listing, cleaning up files", e);
         }
-
         return listingMapper.toListingResponse(listing);
     }
 
@@ -81,10 +91,14 @@ public class ListingService {
             throw new IllegalStateException("Not your listing");
         }
 
-        if(req.getLocationRequest() != null) {
-            listing.setLocation(locationService
-                    .createLocationOrGet(req.getLocationRequest())
-            );
+        LocationRequest newLoc = req.getLocationRequest();
+        Location currentLoc = listing.getLocation();
+
+        if (!currentLoc.getCountry().equals(newLoc.getCountry().toLowerCase()) ||
+                !currentLoc.getCity().equals(newLoc.getCity().toLowerCase()) ||
+                !currentLoc.getAddress().equals(newLoc.getAddress().toLowerCase())) {
+
+            locationMapper.updateLocation(newLoc, listing.getLocation());
         }
 
         listingMapper.updateListing(req, listing);

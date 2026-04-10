@@ -5,9 +5,12 @@ import com.library.dto.listing.ListingResponse;
 import com.library.dto.listing.UpdateListingRequest;
 import com.library.service.ListingService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,11 +26,25 @@ public class ListingController {
     private final ListingService listingService;
 
     @Operation(summary = "Create listing")
-    @PostMapping("/listings")
-    public ResponseEntity<ListingResponse> create(@Valid @RequestBody ListingRequest listingRequest,
-                                             List<MultipartFile> files,
-                                             String email) {
-        ListingResponse lr = listingService.createListing(listingRequest, files, email);
+    @PostMapping(value = "/listings")
+    public ResponseEntity<ListingResponse> create(
+            @Parameter(description = "Данные о листинге")
+            @Valid @RequestBody ListingRequest listingRequest,
+
+            @Parameter(description = "Email пользователя")
+            String email) {
+        ListingResponse lr = listingService.createListing(listingRequest, email);
+        return ResponseEntity.ok(lr);
+    }
+
+    @Operation(summary = "Add image to the listing")
+    @PostMapping(value = "/listings/{id}/images")
+    public ResponseEntity<ListingResponse> addImageToListing(
+            @Parameter(description = "Изображение (jpg, png)")
+            @RequestPart("files") List<MultipartFile> files,
+
+            @PathVariable UUID id) {
+        ListingResponse lr = listingService.addImageToListing(id, files);
         return ResponseEntity.ok(lr);
     }
 

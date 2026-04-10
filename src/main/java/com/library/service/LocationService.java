@@ -43,4 +43,14 @@ public class LocationService {
     public Location findById(UUID id) {
         return locationRepository.findById(id).orElseThrow(EntityNotFoundException::new);
     }
+
+    @Transactional
+    public Location createLocation(LocationRequest locationRequest) {
+        Location location = new Location();
+        location.setCountry(locationRequest.getCountry().toLowerCase());
+        location.setCity(locationRequest.getCity().toLowerCase());
+        location.setAddress(locationRequest.getAddress().toLowerCase());
+        locationRepository.save(location);
+        return location;
+    }
 }
