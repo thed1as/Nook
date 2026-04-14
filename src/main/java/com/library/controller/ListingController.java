@@ -6,7 +6,6 @@ import com.library.dto.listing.UpdateListingRequest;
 import com.library.service.ListingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +37,10 @@ public class ListingController {
     }
 
     @Operation(summary = "Add image to the listing")
-    @PostMapping(value = "/listings/{id}/images")
+    @PostMapping(value = "/listings/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ListingResponse> addImageToListing(
             @Parameter(description = "Изображение (jpg, png)")
-            @RequestPart("files") List<MultipartFile> files,
+            @RequestParam("files") List<MultipartFile> files,
 
             @PathVariable UUID id) {
         ListingResponse lr = listingService.addImageToListing(id, files);

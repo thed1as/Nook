@@ -22,22 +22,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    @Transactional
-    public UserResponse createUser(UserRequest userRequest) {
-        if(userRepository.existsByEmail(userRequest.getEmail())) {
-            throw new EntityExistsException("User with email "
-                    + userRequest.getEmail()
-                    + " already exists");
-        }
-        User user = new User();
-        user.setUsername(userRequest.getUsername());
-        user.setPassword(userRequest.getPassword());
-        user.setEmail(userRequest.getEmail());
-        user.setRole(Role.USER);
-
-        return userMapper.toUserResponse(userRepository.save(user));
-    }
-
 //    public UserResponse updateUser(UpdateUserRequest userRequest) {}
 
     @Transactional(readOnly = true)

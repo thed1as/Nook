@@ -31,6 +31,20 @@ public class BookingService {
     @Value("${app.booking.cancellation-window-days}")
     private long cancellationWindowDays;
 
+    private BigDecimal getFullPrice(LocalDateTime checkInDate, LocalDateTime checkOutDate, BigDecimal pricePerNight) {
+        long days = ChronoUnit.DAYS.between(
+                checkInDate.toLocalDate(), checkOutDate.toLocalDate());
+
+        if(days <= 0) {
+            long hours = ChronoUnit.HOURS.between(checkInDate, checkOutDate);
+            BigDecimal pricePerHour = pricePerNight.divide(BigDecimal.valueOf(24));
+            return pricePerHour.multiply(BigDecimal.valueOf(hours));
+        }
+
+        BigDecimal totalPrice = pricePerNight.multiply(BigDecimal.valueOf(days));
+        return totalPrice;
+    }
+
     @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest, String email) {
         if(!bookingRequest.getCheckOutDate().isAfter(bookingRequest.getCheckInDate())) {
@@ -50,11 +64,8 @@ public class BookingService {
                 bookingRequest.getCheckOutDate())){
             throw new IllegalStateException("Listing is already occupied");
         }
-        Long days = ChronoUnit.DAYS.between(
-                bookingRequest.getCheckInDate().toLocalDate(),
-                bookingRequest.getCheckOutDate().toLocalDate());
 
-        BigDecimal totalPrice = listing.getPricePerNight().multiply(BigDecimal.valueOf(days));
+        BigDecimal totalPrice = getFullPrice(bookingRequest.getCheckInDate(), bookingRequest.getCheckOutDate(), listing.getPricePerNight());
 
         Booking booking = new Booking();
         booking.setCheckInDate(bookingRequest.getCheckInDate());

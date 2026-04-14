@@ -12,7 +12,6 @@ import com.library.mapper.ListingMapper;
 import com.library.mapper.LocationMapper;
 import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -114,7 +113,8 @@ public class ListingService {
                 .orElseThrow(EntityNotFoundException::new);
     }
 
-//    set role admin
+
+
     @Transactional
     public void deleteListingById(UUID listingId) {
         Listing listing = listingRepository.findById(listingId).orElseThrow(EntityNotFoundException::new);
@@ -127,7 +127,8 @@ public class ListingService {
 
     @Transactional(readOnly = true)
     public List<ListingResponse> getUsersListings(UUID userId) {
-        return listingRepository.findAllByUserId(userId);
+        return listingRepository.findAllByUserId(userId).stream()
+                .map(listingMapper::toListingResponse).collect(Collectors.toList());
     }
 
 //    Entity getters

@@ -3,6 +3,7 @@ package com.library.controller;
 import com.library.dto.listing.ListingResponse;
 import com.library.dto.user.UserRequest;
 import com.library.dto.user.UserResponse;
+import com.library.service.BookingService;
 import com.library.service.ListingService;
 import com.library.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,13 +23,6 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
     private final ListingService listingService;
-
-    @Operation(summary = "Create user")
-    @PostMapping("/users")
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest userRequest) {
-        UserResponse ur = userService.createUser(userRequest);
-        return ResponseEntity.ok(ur);
-    }
 
     @Operation(summary = "Find user by id")
     @GetMapping("/users/{id}")

@@ -1,6 +1,7 @@
 package com.library.mapper;
 
 import com.library.dto.location.LocationRequest;
+import com.library.dto.location.LocationResponse;
 import com.library.entity.Location;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
@@ -9,6 +10,11 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring")
 public interface LocationMapper {
+
+    LocationResponse toLocationResponse(Location location);
+
+    Location toLocation(LocationRequest locationRequest);
+
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateLocation(LocationRequest req, @MappingTarget Location location);
 }

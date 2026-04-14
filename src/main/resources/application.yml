@@ -14,6 +14,9 @@ spring:
       path: /api-docs
     swagger-ui:
       path: /swagger
+  security:
+    secret-key: Wm85F524PED7mf2-EbwfUuGV96u6a5HxSaa4nZXI98A
+    expiration: 3600000
 
 minio:
   url: http://localhost:9000

@@ -6,8 +6,14 @@ import com.library.entity.Booking;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
-public interface                                                                                                                        BookingMapper {
+@Mapper(componentModel = "spring", uses = {LocationMapper.class, ListingImageMapper.class})
+public interface BookingMapper {
+    @Mapping(target = "listingId", source = "listing.listingId")
+    @Mapping(target = "listingTitle", source = "listing.title")
+    @Mapping(target = "listingDescription", source = "listing.description")
+    @Mapping(target = "listingImage", source = "listing.listingImages")
+    @Mapping(target = "location", source = "listing.location")
+    @Mapping(target = "username", source = "user.username")
     BookingResponse toBookingResponse(Booking booking);
 
     @Mapping(target = "bookingId", ignore = true)

@@ -1,7 +1,8 @@
 package com.library.dto.booking;
 
+import com.library.dto.ListingImage.ListingImageResponse;
+import com.library.dto.location.LocationResponse;
 import com.library.entity.ListingImage;
-import com.library.entity.Location;
 import com.library.enums.Status;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,6 @@ import java.util.UUID;
 @Builder
 public class BookingResponse {
 
-    private UUID id;
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;
     private BigDecimal totalPrice;
@@ -24,10 +24,9 @@ public class BookingResponse {
     private UUID listingId;
     private String listingTitle;
     private String listingDescription;
-    private List<ListingImage> listingImage;
-    private Location location;
+    private List<ListingImageResponse> listingImage;
+    private LocationResponse location;
 
-    private UUID userId;
-    private String fullName;
+    private String username;
 
 }
