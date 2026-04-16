@@ -2,13 +2,12 @@ package com.library.controller;
 
 import com.library.dto.user.LoginRequest;
 import com.library.dto.user.UserRequest;
-import com.library.security.CustomUserDetailsService;
 import com.library.security.JwtService;
 import com.library.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,19 +15,19 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final JwtService jwtService;
-    private final CustomUserDetailsService userDetailsService;
     private final AuthService authService;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     @PostMapping("/login")
     public String login(@Valid @RequestBody LoginRequest loginRequest) {
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(loginRequest.getEmail());
-        if(!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-            throw new RuntimeException("Wrong password");
-        }
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getEmail(),
+                        loginRequest.getPassword()
+                )
+        );
 
-        return jwtService.generateToken(loginRequest.getEmail());
+        return jwtService.generateToken(loginRequest.getPassword());
     }
 
     @PostMapping("/register")
