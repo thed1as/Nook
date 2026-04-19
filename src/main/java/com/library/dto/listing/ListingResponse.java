@@ -16,4 +16,5 @@ public class ListingResponse {
     private List<ListingImageResponse> listingImage = new ArrayList<>();
     private LocationResponse location;
     private List<ReviewResponse> reviews;
+    private int pricePerNight;
 }

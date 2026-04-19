@@ -14,10 +14,12 @@ import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Pageable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +34,8 @@ public class ListingService {
     private final LocationService locationService;
     private final MinioService minioService;
     private final LocationMapper locationMapper;
+
+//    CREATE
 
     @Transactional
     public ListingResponse createListing(ListingRequest listingRequest,
@@ -81,6 +85,8 @@ public class ListingService {
         return listingMapper.toListingResponse(listing);
     }
 
+//    UPDATE
+
     @Transactional
     public ListingResponse updateListing(UpdateListingRequest req,
                                          String email,
@@ -105,6 +111,8 @@ public class ListingService {
         return listingMapper.toListingResponse(listing);
     }
 
+//    SEARCHING
+
     @Transactional(readOnly = true)
     public ListingResponse getListingById(UUID listingId) {
         return listingRepository
@@ -113,7 +121,17 @@ public class ListingService {
                 .orElseThrow(EntityNotFoundException::new);
     }
 
+    @Transactional(readOnly = true)
+    public List<ListingResponse> getUsersListings(String email) {
+        return listingRepository.findAllByUserEmail(email).stream()
+                .map(listingMapper::toListingResponse).collect(Collectors.toList());
+    }
 
+    public Page<ListingResponse> getAll(Pageable pageable) {
+        return listingRepository.findAll(pageable).map(listingMapper::toListingResponse);
+    }
+
+//  DELETE
 
     @Transactional
     public void deleteListingById(UUID listingId) {
@@ -125,11 +143,6 @@ public class ListingService {
         listingRepository.delete(listing);
     }
 
-    @Transactional(readOnly = true)
-    public List<ListingResponse> getUsersListings(String email) {
-        return listingRepository.findAllByUserEmail(email).stream()
-                .map(listingMapper::toListingResponse).collect(Collectors.toList());
-    }
 
 //    Entity getters
     @Transactional(readOnly = true)
@@ -138,9 +151,4 @@ public class ListingService {
                 .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
     }
 
-    public List<ListingResponse> getAll() {
-        return listingRepository.findAll()
-                .stream().map(listingMapper::toListingResponse)
-                .collect(Collectors.toList());
-    }
 }

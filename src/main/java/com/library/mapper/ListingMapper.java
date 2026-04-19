@@ -13,6 +13,7 @@ public interface ListingMapper {
     @Mapping(target = "listingImage", source = "listingImages")
     @Mapping(target = "location", source = "location")
     @Mapping(target = "reviews", source = "reviews")
+    @Mapping(target = "pricePerNight", source = "pricePerNight")
     ListingResponse toListingResponse(Listing listing);
 
     @Mapping(target = "listingId", ignore = true)

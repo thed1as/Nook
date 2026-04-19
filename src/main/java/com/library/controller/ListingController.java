@@ -10,12 +10,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,6 +55,8 @@ public class ListingController {
         return ResponseEntity.ok(lr);
     }
 
+    //    SEARCHING
+
     @Operation(summary = "Find listings")
     @GetMapping("/listings/{id}")
     public ResponseEntity<ListingResponse> get(@PathVariable UUID id) {
@@ -60,7 +64,6 @@ public class ListingController {
         return ResponseEntity.ok(lr);
     }
 
-//    SEARCHING
 
     @Operation(summary = "Find users listings by id")
     @PreAuthorize("hasRole('HOST')")
@@ -73,8 +76,8 @@ public class ListingController {
 
     @Operation(summary = "Find all listings")
     @GetMapping("/listings")
-    public ResponseEntity<List<ListingResponse>> getListings() {
-        List<ListingResponse> llr = listingService.getAll();
+    public ResponseEntity<Page<ListingResponse>> getListings(Pageable pageable) {
+        Page<ListingResponse> llr = listingService.getAll(pageable);
         return ResponseEntity.ok(llr);
     }
 
