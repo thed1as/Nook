@@ -27,7 +27,7 @@ public class AuthController {
                 )
         );
 
-        return jwtService.generateToken(loginRequest.getPassword());
+        return jwtService.generateToken(loginRequest.getEmail());
     }
 
     @PostMapping("/register")

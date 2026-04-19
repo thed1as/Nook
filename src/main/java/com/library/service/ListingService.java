@@ -126,8 +126,8 @@ public class ListingService {
     }
 
     @Transactional(readOnly = true)
-    public List<ListingResponse> getUsersListings(UUID userId) {
-        return listingRepository.findAllByUserId(userId).stream()
+    public List<ListingResponse> getUsersListings(String email) {
+        return listingRepository.findAllByUserEmail(email).stream()
                 .map(listingMapper::toListingResponse).collect(Collectors.toList());
     }
 

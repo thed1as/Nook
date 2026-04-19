@@ -26,6 +26,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("SELECT b FROM Booking b WHERE b.user.userId = :userId")
     List<Booking> findUserBookingsById(UUID userId);
 
+    @Query("SELECT b FROM Booking b WHERE b.user.email = :email")
+    List<Booking> findUserBookingsByEmail(String email);
+
     UUID listing(Listing listing);
 
     @Query("SELECT b FROM Booking b WHERE b.listing.listingId = :listingId")

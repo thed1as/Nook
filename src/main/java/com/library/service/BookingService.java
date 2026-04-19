@@ -46,7 +46,10 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse createBooking(BookingRequest bookingRequest, String email) {
+    public BookingResponse createBooking(BookingRequest bookingRequest) {
+        String email = userService.getCurrentUserEmail();
+        System.out.println("email " + email);
+
         if(!bookingRequest.getCheckOutDate().isAfter(bookingRequest.getCheckInDate())) {
             throw new IllegalStateException("Invalid date range");
         }
@@ -82,7 +85,8 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse cancelBooking(UUID bookingId, String email) {
+    public BookingResponse cancelBooking(UUID bookingId) {
+        String email = userService.getCurrentUserEmail();
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
                         + bookingId));
@@ -107,8 +111,9 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookingResponse> getUserBookings(UUID userId) {
-        return bookingRepository.findUserBookingsById(userId)
+    public List<BookingResponse> getMyBookings() {
+        String email = userService.getCurrentUserEmail();
+        return bookingRepository.findUserBookingsByEmail(email)
                 .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
     }
 

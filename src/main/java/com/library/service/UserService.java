@@ -1,19 +1,16 @@
 package com.library.service;
 
-import com.library.dto.listing.ListingResponse;
-import com.library.dto.user.UserRequest;
 import com.library.dto.user.UserResponse;
 import com.library.entity.User;
-import com.library.enums.Role;
 import com.library.mapper.UserMapper;
 import com.library.repository.UserRepository;
-import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -53,5 +50,15 @@ public class UserService {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new EntityNotFoundException("User not found with email:" + email)
         );
+    }
+
+    public String getCurrentUserEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("printing user info: " + auth.getAuthorities());
+
+        if(auth != null) {
+            return auth.getName();
+        }
+        return null;
     }
 }

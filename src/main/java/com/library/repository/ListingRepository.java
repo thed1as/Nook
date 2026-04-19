@@ -10,4 +10,7 @@ import java.util.UUID;
 public interface ListingRepository extends JpaRepository<Listing, UUID> {
     @Query("SELECT l ALL FROM Listing l WHERE l.user.userId = :userId")
     List<Listing> findAllByUserId(UUID userId);
+
+    @Query("SELECT l ALL FROM Listing l WHERE l.user.email = :email")
+    List<Listing> findAllByUserEmail(String email);
 }

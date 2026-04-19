@@ -23,8 +23,8 @@ public class BookingController {
 //    CHANGE THAT USERNAME LATER TO AUTHENTICATION
     @Operation(summary = "Create booking")
     @PostMapping("/bookings")
-    public ResponseEntity<BookingResponse> create(@Valid @RequestBody BookingRequest bookingRequest, String email) {
-        BookingResponse br = bookingService.createBooking(bookingRequest, email);
+    public ResponseEntity<BookingResponse> create(@Valid @RequestBody BookingRequest bookingRequest) {
+        BookingResponse br = bookingService.createBooking(bookingRequest);
         return ResponseEntity.ok(br);
     }
 
@@ -36,9 +36,9 @@ public class BookingController {
     }
 
     @Operation(summary = "Find bookings")
-    @GetMapping("/users/{id}/bookings")
-    public ResponseEntity<List<BookingResponse>> getBookings(@PathVariable UUID id) {
-        List<BookingResponse> lbr = bookingService.getUserBookings(id);
+    @GetMapping("/bookings/my")
+    public ResponseEntity<List<BookingResponse>> getBookings() {
+        List<BookingResponse> lbr = bookingService.getMyBookings();
         return ResponseEntity.ok(lbr);
     }
 
@@ -51,8 +51,8 @@ public class BookingController {
 
     @Operation(summary = "Cancel booking")
     @DeleteMapping("/bookings/{id}")
-    public ResponseEntity<BookingResponse> delete(@PathVariable UUID id, String email) {
-        BookingResponse br = bookingService.cancelBooking(id, email);
+    public ResponseEntity<BookingResponse> delete(@PathVariable UUID id) {
+        BookingResponse br = bookingService.cancelBooking(id);
         return ResponseEntity.ok(br);
     }
 }
