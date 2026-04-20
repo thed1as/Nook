@@ -26,6 +26,7 @@ public class Booking {
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;
 
+    @Column(precision = 38, scale = 2)
     private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)

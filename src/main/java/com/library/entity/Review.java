@@ -18,6 +18,7 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID reviewId;
 
+    @Column(precision = 38, scale = 2)
     private BigDecimal rating;
 
     private String comment;

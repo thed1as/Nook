@@ -24,6 +24,7 @@ public class Listing {
 
     private String description;
 
+    @Column(precision = 38, scale = 2)
     private BigDecimal pricePerNight;
 
     @CreationTimestamp
