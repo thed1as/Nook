@@ -90,7 +90,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
                         + bookingId));
-        if(!booking.getUser().getEmail().equals(email)) {
+        if(!booking.getUser().getEmail().equals(email) && !booking.getListing().getUser().getEmail().equals(email)) {
             throw new IllegalStateException("You is not owner of booking");
         }
         if(LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) &&
