@@ -36,19 +36,15 @@ public class BookingService {
                 checkInDate.toLocalDate(), checkOutDate.toLocalDate());
 
         if(days <= 0) {
-            long hours = ChronoUnit.HOURS.between(checkInDate, checkOutDate);
-            BigDecimal pricePerHour = pricePerNight.divide(BigDecimal.valueOf(24));
-            return pricePerHour.multiply(BigDecimal.valueOf(hours));
+            throw new IllegalStateException("Minimum booking period is 1 night");
         }
 
-        BigDecimal totalPrice = pricePerNight.multiply(BigDecimal.valueOf(days));
-        return totalPrice;
+        return pricePerNight.multiply(BigDecimal.valueOf(days));
     }
 
     @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest) {
         String email = userService.getCurrentUserEmail();
-        System.out.println("email " + email);
 
         if(!bookingRequest.getCheckOutDate().isAfter(bookingRequest.getCheckInDate())) {
             throw new IllegalStateException("Invalid date range");
@@ -60,6 +56,9 @@ public class BookingService {
 
         User user = userService.getUserByEmail(email);
         Listing listing = listingService.getListingOrThrow(bookingRequest.getListingId());
+        if(listing.getUser().getEmail().equals(email)) {
+            throw new IllegalStateException("You cannot book your own listing!");
+        }
 
         if(bookingRepository.isListOccupied(
                 bookingRequest.getListingId(),
@@ -90,11 +89,13 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
                         + bookingId));
-        if(!booking.getUser().getEmail().equals(email) && !booking.getListing().getUser().getEmail().equals(email)) {
+        if(!booking.getUser().getEmail().equals(email) &&
+                !booking.getListing().getUser().getEmail().equals(email)) {
             throw new IllegalStateException("You is not owner of booking");
         }
         if(LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) &&
-                booking.getStatus().equals(Status.PENDING)) {
+                booking.getStatus().equals(Status.PENDING) &&
+                LocalDateTime.now().isAfter(booking.getCreatedAt().plusDays(1))) {
             throw new IllegalStateException("Too late to cancel booking");
         }
         booking.setStatus(Status.CANCELLED);

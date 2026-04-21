@@ -10,6 +10,7 @@ import com.library.entity.Location;
 import com.library.entity.User;
 import com.library.mapper.ListingMapper;
 import com.library.mapper.LocationMapper;
+import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -29,11 +30,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ListingService {
     private final ListingRepository listingRepository;
+    private final BookingRepository bookingRepository;
     private final UserService userService;
-    private final ListingMapper listingMapper;
     private final LocationService locationService;
     private final MinioService minioService;
     private final LocationMapper locationMapper;
+    private final ListingMapper listingMapper;
 
 //    CREATE
 
@@ -63,22 +65,26 @@ public class ListingService {
     public ListingResponse addImageToListing(UUID listingId, List<MultipartFile> file) {
         Listing listing = getListingOrThrow(listingId);
         List<ListingImage> images = new ArrayList<>();
-        for(MultipartFile fileItem : file) {
-            String url = minioService.uploadFile(fileItem);
-
-            ListingImage image = new ListingImage();
-            image.setUrl(url);
-            image.setListingImg(listing);
-
-            images.add(image);
-        }
-        listing.addListingImage(images);
 
         try {
+            for(MultipartFile fileItem : file) {
+                String fileName = fileItem.getOriginalFilename();
+                minioService.uploadFile(fileItem);
+
+
+                ListingImage image = new ListingImage();
+                image.setFileName(fileName);
+                image.setListingImg(listing);
+
+                images.add(image);
+            }
+            listing.addListingImage(images);
+
             listingRepository.save(listing);
-        } catch (DataAccessException e) {
+
+        } catch (Exception e) {
             for(ListingImage image : images) {
-                minioService.deleteFile(image.getUrl());
+                minioService.deleteFile(image.getFileName());
             }
             throw new RuntimeException("Failed to save listing, cleaning up files", e);
         }
@@ -103,7 +109,8 @@ public class ListingService {
                 !currentLoc.getCity().equals(newLoc.getCity().toLowerCase()) ||
                 !currentLoc.getAddress().equals(newLoc.getAddress().toLowerCase())) {
 
-            locationMapper.updateLocation(newLoc, listing.getLocation());
+            Location updLoc = locationService.createLocationOrGet(req.getLocationRequest());
+            listing.setLocation(updLoc);
         }
 
         listingMapper.updateListing(req, listing);
@@ -135,10 +142,14 @@ public class ListingService {
 
     @Transactional
     public void deleteListingById(UUID listingId) {
+        if(bookingRepository.existsActiveBookingsForListing(listingId)) {
+            throw new IllegalStateException("Cannot delete booking with active future bookings");
+        }
+
         Listing listing = listingRepository.findById(listingId).orElseThrow(EntityNotFoundException::new);
         List<ListingImage> images = listing.getListingImages();
         for(ListingImage image : images) {
-            minioService.deleteFile(image.getUrl());
+            minioService.deleteFile(image.getFileName());
         }
         listingRepository.delete(listing);
     }
@@ -147,7 +158,7 @@ public class ListingService {
 //    Entity getters
     @Transactional(readOnly = true)
     public Listing getListingOrThrow(UUID listingId) {
-        return listingRepository.findById(listingId)
+        return listingRepository.findByIdWithLock(listingId)
                 .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
     }
 

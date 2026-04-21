@@ -54,7 +54,7 @@ CREATE TABLE booking
     user_id        uuid,
 
     CONSTRAINT booking_status_check
-        CHECK (status::text = ANY ((ARRAY['PENDING','CONFIRMED','CANCELLED'])::text[])),
+        CHECK (status::text = ANY ((ARRAY['PENDING','CONFIRMED','CANCELLED', 'COMPLETED'])::text[])),
 
     CONSTRAINT fk_booking_listing
         FOREIGN KEY (listing_id) REFERENCES listing(listing_id),
@@ -66,7 +66,7 @@ CREATE TABLE booking
 CREATE TABLE listing_image
 (
     listing_image_id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    url              varchar(255),
+    file_name              varchar(255),
     listing_id       uuid,
 
     CONSTRAINT fk_listing_image_listing
@@ -106,3 +106,12 @@ ALTER TABLE users
     ALTER COLUMN password SET NOT NULL,
     ALTER COLUMN username SET NOT NULL,
     ALTER COLUMN role SET NOT NULL;
+
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+ALTER TABLE booking
+    ADD CONSTRAINT no_overlap
+        EXCLUDE USING gist (
+        listing_id WITH =,
+        tsrange(check_in_date, check_out_date, '[]') WITH &&
+        );

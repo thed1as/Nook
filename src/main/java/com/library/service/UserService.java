@@ -56,7 +56,7 @@ public class UserService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         System.out.println("printing user info: " + auth.getAuthorities());
 
-        if(auth != null) {
+        if(auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
             return auth.getName();
         }
         return null;

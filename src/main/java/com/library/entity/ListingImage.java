@@ -19,7 +19,7 @@ public class ListingImage {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID listingImageId;
 
-    private String url;
+    private String fileName;
 
 //    Connections
     @ManyToOne

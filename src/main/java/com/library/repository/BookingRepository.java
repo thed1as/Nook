@@ -33,4 +33,12 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT b FROM Booking b WHERE b.listing.listingId = :listingId")
     List<Booking> findListingBookingsById(UUID listingId);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END
+        FROM Booking b
+        WHERE b.listing.listingId = :listingId
+        AND b.status IN ('CONFIRMED', 'CANCELLED')
+    """)
+    boolean existsActiveBookingsForListing(UUID listingId);
 }
