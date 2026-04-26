@@ -20,6 +20,9 @@ public class MinioService {
 
     @Transactional
     public String uploadFile(MultipartFile file) {
+        if(file.isEmpty() || file == null) {
+            throw new IllegalArgumentException("File is empty");
+        }
         try {
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
 
@@ -35,7 +38,7 @@ public class MinioService {
             return properties.getUrl() + "/" + properties.getBucket() + "/" + fileName;
 
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка загрузки файла", e);
+            throw new RuntimeException("Error uploading file", e);
         }
     }
 

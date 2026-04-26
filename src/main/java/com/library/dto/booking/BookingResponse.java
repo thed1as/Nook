@@ -4,8 +4,10 @@ import com.library.dto.ListingImage.ListingImageResponse;
 import com.library.dto.location.LocationResponse;
 import com.library.entity.ListingImage;
 import com.library.enums.Status;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BookingResponse {
 
     private LocalDateTime checkInDate;

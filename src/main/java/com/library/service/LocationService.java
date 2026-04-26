@@ -15,42 +15,20 @@ import java.util.UUID;
 public class LocationService {
     private final LocationRepository locationRepository;
 
-    @Transactional(readOnly = true)
-    public boolean existsByCountryAndCityAndAddress(String country, String city, String address) {
-       return locationRepository.existsByCountryAndCityAndAddress(country, city, address);
-    }
-
 //    in function
     @Transactional
-    public Location createLocationOrGet(LocationRequest locationRequest) {
-        Location loc = locationRepository.findByCountryAndCityAndAddress(
-                locationRequest.getCountry(),
-                locationRequest.getCity(),
-                locationRequest.getAddress()).orElse(null);
-        if(loc != null) {
-            return loc;
-        }
+    public Location createLocationOrGet(LocationRequest request) {
+        String country = request.getCountry().toLowerCase();
+        String city = request.getCity().toLowerCase();
+        String address = request.getAddress().toLowerCase();
 
-        Location location = new Location();
-        location.setCountry(locationRequest.getCountry().toLowerCase());
-        location.setCity(locationRequest.getCity().toLowerCase());
-        location.setAddress(locationRequest.getAddress().toLowerCase());
-        locationRepository.save(location);
-        return location;
-    }
-
-    @Transactional(readOnly = true)
-    public Location findById(UUID id) {
-        return locationRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-    }
-
-    @Transactional
-    public Location createLocation(LocationRequest locationRequest) {
-        Location location = new Location();
-        location.setCountry(locationRequest.getCountry().toLowerCase());
-        location.setCity(locationRequest.getCity().toLowerCase());
-        location.setAddress(locationRequest.getAddress().toLowerCase());
-        locationRepository.save(location);
-        return location;
+        return locationRepository.findByCountryAndCityAndAddress(country, city, address)
+                .orElseGet(() -> {
+                    Location newLoc = new Location();
+                    newLoc.setCountry(country);
+                    newLoc.setCity(city);
+                    newLoc.setAddress(address);
+                    return locationRepository.save(newLoc);
+                });
     }
 }

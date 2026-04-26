@@ -14,7 +14,6 @@ import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +39,8 @@ public class ListingService {
 //    CREATE
 
     @Transactional
-    public ListingResponse createListing(ListingRequest listingRequest,
-                                         String email) {
-        User user = userService.getUserByEmail(email);
+    public ListingResponse createListing(ListingRequest listingRequest) {
+        User user = userService.getUserByEmail(userService.getCurrentUserEmail());
         Listing listing = Listing.builder()
                 .title(listingRequest.getListingTitle())
                 .description(listingRequest.getDescription())
@@ -95,9 +93,9 @@ public class ListingService {
 
     @Transactional
     public ListingResponse updateListing(UpdateListingRequest req,
-                                         String email,
                                          UUID listingId) {
         Listing listing = getListingOrThrow(listingId);
+        String email = userService.getCurrentUserEmail();
         if(!listing.getUser().getEmail().equals(email)) {
             throw new IllegalStateException("Not your listing");
         }

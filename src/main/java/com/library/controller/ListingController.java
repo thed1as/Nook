@@ -38,8 +38,7 @@ public class ListingController {
             @Parameter(description = "Данные о листинге")
             @Valid @RequestBody ListingRequest listingRequest)
     {
-        String email = userService.getCurrentUserEmail();
-        ListingResponse lr = listingService.createListing(listingRequest, email);
+        ListingResponse lr = listingService.createListing(listingRequest);
         return ResponseEntity.ok(lr);
     }
 
@@ -87,8 +86,7 @@ public class ListingController {
     @PreAuthorize("hasRole('HOST')")
     @PutMapping("/listings/{id}")
     public ResponseEntity<ListingResponse> update(@PathVariable UUID id, @RequestBody UpdateListingRequest listingRequest) {
-        String email = userService.getCurrentUserEmail();
-        ListingResponse lr = listingService.updateListing(listingRequest, email, id);
+        ListingResponse lr = listingService.updateListing(listingRequest, id);
         return ResponseEntity.ok(lr);
     }
 

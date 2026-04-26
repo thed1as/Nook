@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -93,9 +94,14 @@ public class BookingService {
                 !booking.getListing().getUser().getEmail().equals(email)) {
             throw new IllegalStateException("You is not owner of booking");
         }
-        if(LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) &&
-                booking.getStatus().equals(Status.PENDING) &&
-                LocalDateTime.now().isAfter(booking.getCreatedAt().plusDays(1))) {
+
+        if(booking.getStatus().equals(Status.CANCELLED)) {
+            throw new IllegalStateException("Booking is already cancelled");
+        }
+
+        if((LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) ||
+                LocalDateTime.now().isAfter(booking.getCreatedAt().plusDays(1))) &&
+                booking.getStatus().equals(Status.PENDING)) {
             throw new IllegalStateException("Too late to cancel booking");
         }
         booking.setStatus(Status.CANCELLED);
