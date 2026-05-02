@@ -2,6 +2,7 @@ package com.library.service;
 
 import com.library.dto.user.UserResponse;
 import com.library.entity.User;
+import com.library.enums.Role;
 import com.library.mapper.UserMapper;
 import com.library.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -54,5 +55,19 @@ public class UserService {
             return auth.getName();
         }
         return null;
+    }
+
+    @Transactional
+    public boolean makeHost() {
+        String email = getCurrentUserEmail();
+        User user = getUserByEmail(email);
+
+        if(user.getRole().equals(Role.HOST)) {
+            throw new IllegalStateException("You're already host");
+        }
+
+        user.setRole(Role.HOST);
+        userRepository.save(user);
+        return true;
     }
 }

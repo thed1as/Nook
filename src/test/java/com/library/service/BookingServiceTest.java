@@ -100,7 +100,8 @@ public class BookingServiceTest {
     @Test
     void createBooking_CheckInDateInPast_ThrowsIllegalStateException(){
         BookingRequest bookingRequest = new BookingRequest();
-        bookingRequest.setCheckInDate(LocalDateTime.now().minusDays(2));
+        LocalDateTime start = LocalDateTime.of(2012, 12, 12, 12, 12);
+        bookingRequest.setCheckInDate(start);
         bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(3));
 
         assertThatThrownBy(() -> bookingService.createBooking(bookingRequest))

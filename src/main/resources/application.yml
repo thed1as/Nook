@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/nook_db
-    username: postgres
-    password: root
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/nook_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:root}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -12,21 +12,16 @@ spring:
     show-sql: true
   flyway:
     enabled: true
-#    baseline-on-migrate: true
-  springdoc:
-    api-docs:
-      path: /api-docs
-    swagger-ui:
-      path: /swagger
   security:
-    secret-key: Wm85F524PED7mf2-EbwfUuGV96u6a5HxSaa4nZXI98A
+    secret-key: ${SECURITY_KEY:Wm85F524PED7mf2-EbwfUuGV96u6a5HxSaa4nZXI98A}
     expiration: 3600000
 
 minio:
-  url: http://localhost:9000
-  access-key: minio
-  secret-key: minio123
-  bucket: listing-images
+  # Заменяем localhost на переменную MINIO_HOST
+  url: http://${MINIO_HOST:localhost}:9000
+  access-key: ${MINIO_ACCESS_KEY:minio}
+  secret-key: ${MINIO_SECRET_KEY:minio123}
+  bucket: ${MINIO_BUCKET:listing-images}
 
 app:
   booking:

@@ -2,6 +2,7 @@ package com.library.controller;
 
 import com.library.dto.user.LoginRequest;
 import com.library.dto.user.UserRequest;
+import com.library.dto.user.UserResponse;
 import com.library.security.JwtService;
 import com.library.service.AuthService;
 import jakarta.validation.Valid;
@@ -32,7 +33,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public String register(@Valid @RequestBody UserRequest userRequest) {
-        authService.createUser(userRequest);
-        return jwtService.generateToken(userRequest.getEmail());
+        UserResponse ur = authService.createUser(userRequest);
+        return jwtService.generateToken(ur.getEmail());
     }
 }

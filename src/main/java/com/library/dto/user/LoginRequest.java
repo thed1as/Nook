@@ -1,6 +1,7 @@
 package com.library.dto.user;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -9,6 +10,7 @@ import lombok.Data;
 public class LoginRequest {
     @Schema(description = "Login email")
     @NotBlank
+    @Email
     private String email;
     @Schema(description = "Login pass")
     @NotBlank

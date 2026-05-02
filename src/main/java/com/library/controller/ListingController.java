@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,7 +40,7 @@ public class ListingController {
             @Valid @RequestBody ListingRequest listingRequest)
     {
         ListingResponse lr = listingService.createListing(listingRequest);
-        return ResponseEntity.ok(lr);
+        return ResponseEntity.status(HttpStatus.CREATED).body(lr);
     }
 
     @Operation(summary = "Add image to the listing")
@@ -57,7 +58,7 @@ public class ListingController {
     //    SEARCHING
 
     @Operation(summary = "Find listings")
-    @GetMapping("/listings/{id}")
+    @GetMapping("/listing/{id}")
     public ResponseEntity<ListingResponse> get(@PathVariable UUID id) {
         ListingResponse lr = listingService.getListingById(id);
         return ResponseEntity.ok(lr);
@@ -84,8 +85,8 @@ public class ListingController {
 
     @Operation(summary = "Update listing by id")
     @PreAuthorize("hasRole('HOST')")
-    @PutMapping("/listings/{id}")
-    public ResponseEntity<ListingResponse> update(@PathVariable UUID id, @RequestBody UpdateListingRequest listingRequest) {
+    @PutMapping("/listing/{id}")
+    public ResponseEntity<ListingResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateListingRequest listingRequest) {
         ListingResponse lr = listingService.updateListing(listingRequest, id);
         return ResponseEntity.ok(lr);
     }
@@ -94,7 +95,7 @@ public class ListingController {
 
     @Operation(summary = "Delete listing by id")
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/listings/{id}")
+    @DeleteMapping("/listing/{id}")
     public void delete(@PathVariable UUID id) {
         listingService.deleteListingById(id);
     }

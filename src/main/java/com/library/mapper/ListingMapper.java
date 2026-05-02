@@ -12,6 +12,7 @@ import org.mapstruct.*;
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface ListingMapper {
+    @Mapping(target = "listingId", source = "listingId")
     @Mapping(target = "listingTitle", source = "title")
     @Mapping(target = "listingDescription", source = "description")
     @Mapping(target = "listingImages", source = "listingImages")
