@@ -100,7 +100,7 @@ public class UserControllerTests extends AbstractControllerTest {
             mockMvc.perform(post(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-            ).andExpect(status().isConflict());
+            ).andExpect(status().isForbidden());
         }
 
         @Test

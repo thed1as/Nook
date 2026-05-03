@@ -5,6 +5,8 @@ import com.library.entity.User;
 import com.library.mapper.UserMapper;
 import com.library.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,122 +34,138 @@ public class UserServiceTests {
     @Mock
     private UserMapper userMapper;
 
-    @Test
-    void getUserById_validRequest_ReturnUserResponse() {
-        UUID userId = UUID.randomUUID();
-        User user = new User();
-        UserResponse userResponse = new UserResponse();
+    @Nested
+    @DisplayName("Get user")
+    class GetUser {
+        @Test
+        @DisplayName("valid request user found should return userResponse")
+        void getUserById_validRequest_ReturnUserResponse() {
+            UUID userId = UUID.randomUUID();
+            User user = new User();
+            UserResponse userResponse = new UserResponse();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userMapper.toUserResponse(user)).thenReturn(userResponse);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(userMapper.toUserResponse(user)).thenReturn(userResponse);
 
-        UserResponse result = userService.getUserById(userId);
+            UserResponse result = userService.getUserById(userId);
 
-        assertNotNull(result);
-        assertEquals(result, userResponse);
+            assertNotNull(result);
+            assertEquals(result, userResponse);
 
-        verify(userRepository).findById(userId);
-        verify(userMapper).toUserResponse(user);
-    }
+            verify(userRepository).findById(userId);
+            verify(userMapper).toUserResponse(user);
+        }
 
-    @Test
-    void getUserById_failRequest_ThrowEntityNotFoundException() {
-        UUID userId = UUID.randomUUID();
+        @Test
+        @DisplayName("valid request should user not found should throw EntityNotFoundException")
+        void getUserById_failRequest_ThrowEntityNotFoundException() {
+            UUID userId = UUID.randomUUID();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+            when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.getUserById(userId))
-                .isInstanceOf(EntityNotFoundException.class);
-    }
+            assertThatThrownBy(() -> userService.getUserById(userId))
+                    .isInstanceOf(EntityNotFoundException.class);
+        }
 
-    @Test
-    void deleteUserById_validRequest_DeleteUserResponse() {
-        UUID userId = UUID.randomUUID();
-        when(userRepository.existsById(userId)).thenReturn(true);
+        @Test
+        @DisplayName("valid request should get user by email return UserResponse")
+        void getUserByEmail_validRequest_ReturnUserResponse() {
+            String email = "test@gmail.com";
 
-        userService.deleteUserById(userId);
+            User user = new User();
 
-        verify(userRepository).deleteById(userId);
-    }
+            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
-    @Test
-    void deleteUserById_failRequest_ThrowEntityNotFoundException() {
-        UUID userId = UUID.randomUUID();
+            User result = userService.getUserByEmail(email);
 
-        when(userRepository.existsById(userId)).thenReturn(false);
+            assertNotNull(result);
+            assertEquals(result, user);
 
-        assertThatThrownBy(() -> userService.deleteUserById(userId))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Entity not exists");
+            verify(userRepository).findByEmail(email);
+        }
 
-        verify(userRepository, never()).deleteById(userId);
-    }
+        @Test
+        @DisplayName("user not found by email should throw EntityNotFoundException")
+        void getUserByEmail_failRequest_ThrowEntityNotFoundException() {
+            String email = "test@gmail.com";
 
-    @Test
-    void getUserByEmail_validRequest_ReturnUserResponse() {
-        String email = "test@gmail.com";
+            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        User user = new User();
+            assertThatThrownBy(() -> userService.getUserByEmail(email))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("User not found with email:");
+        }
 
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        @Test
+        @DisplayName("valid request received the user's email")
+        void getCurrentUserEmail_UserAuthenticated_ReturnsEmail() {
+            String expectedEmail = "test@gmail.com";
 
-        User result = userService.getUserByEmail(email);
+            Authentication authentication = mock(Authentication.class);
+            SecurityContext securityContext = mock(SecurityContext.class);
 
-        assertNotNull(result);
-        assertEquals(result, user);
+            when(authentication.isAuthenticated()).thenReturn(true);
+            when(authentication.getName()).thenReturn(expectedEmail);
+            when(securityContext.getAuthentication()).thenReturn(authentication);
 
-        verify(userRepository).findByEmail(email);
-    }
+            SecurityContextHolder.setContext(securityContext);
 
-    @Test
-    void getUserByEmail_failRequest_ThrowEntityNotFoundException() {
-        String email = "test@gmail.com";
+            try {
+                String result = userService.getCurrentUserEmail();
+                assertEquals(expectedEmail, result);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
 
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        @Test
+        @DisplayName("anonymous(not owner or user) user should return null")
+        void getCurrentUserEmail_AnonymousUser_ReturnsNull() {
+            Authentication authentication = mock(Authentication.class);
+            SecurityContext securityContext = mock(SecurityContext.class);
 
-        assertThatThrownBy(() -> userService.getUserByEmail(email))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("User not found with email:");
-    }
+            when(authentication.isAuthenticated()).thenReturn(true);
+            when(authentication.getName()).thenReturn("anonymousUser");
+            when(securityContext.getAuthentication()).thenReturn(authentication);
 
-    @Test
-    void getCurrentUserEmail_UserAuthenticated_ReturnsEmail() {
-        String expectedEmail = "test@gmail.com";
+            SecurityContextHolder.setContext(securityContext);
 
-        Authentication authentication = mock(Authentication.class);
-        SecurityContext securityContext = mock(SecurityContext.class);
+            try {
+                String result = userService.getCurrentUserEmail();
 
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn(expectedEmail);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-
-        SecurityContextHolder.setContext(securityContext);
-
-        try {
-            String result = userService.getCurrentUserEmail();
-            assertEquals(expectedEmail, result);
-        } finally {
-            SecurityContextHolder.clearContext();
+                assertNull(result);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
         }
     }
 
-    @Test
-    void getCurrentUserEmail_AnonymousUser_ReturnsNull() {
-        Authentication authentication = mock(Authentication.class);
-        SecurityContext securityContext = mock(SecurityContext.class);
+    @Nested
+    @DisplayName("Delete user")
+    class DeleteUser {
 
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn("anonymousUser");
-        when(securityContext.getAuthentication()).thenReturn(authentication);
+        @Test
+        @DisplayName("valid request should delete user")
+        void deleteUserById_validRequest_DeleteUser() {
+            UUID userId = UUID.randomUUID();
+            when(userRepository.existsById(userId)).thenReturn(true);
 
-        SecurityContextHolder.setContext(securityContext);
+            userService.deleteUserById(userId);
 
-        try {
-            String result = userService.getCurrentUserEmail();
+            verify(userRepository).deleteById(userId);
+        }
 
-            assertNull(result);
-        } finally {
-            SecurityContextHolder.clearContext();
+        @Test
+        void deleteUserById_failRequest_ThrowEntityNotFoundException() {
+            UUID userId = UUID.randomUUID();
+
+            when(userRepository.existsById(userId)).thenReturn(false);
+
+            assertThatThrownBy(() -> userService.deleteUserById(userId))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage("Entity not exists");
+
+            verify(userRepository, never()).deleteById(userId);
         }
     }
 }

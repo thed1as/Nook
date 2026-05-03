@@ -28,7 +28,7 @@ public class UserController {
 
     @Operation(summary = "become a host")
     @PostMapping("/user/me/role")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('USER')")
     public void updateRoleToHost() {
         userService.makeHost();
     }

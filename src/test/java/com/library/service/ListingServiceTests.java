@@ -12,6 +12,8 @@ import com.library.mapper.ListingMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -54,6 +56,7 @@ public class ListingServiceTests {
     private ListingMapper listingMapper;
 
     @Test
+    @DisplayName("Create listing")
     void createListing_ValidRequest_ReturnsListingResponse() {
         String email = "test@gmail.com";
         ListingRequest listingRequest = new ListingRequest();
@@ -90,269 +93,293 @@ public class ListingServiceTests {
         verify(location).addListing(any(Listing.class));
     }
 
-    @Test
-    void updateListing_validRequest_ReturnsListingResponse() {
-        UUID listingId = UUID.randomUUID();
-        String email = "test@gmail.com";
+    @Nested
+    @DisplayName("Update listing")
+    class UpdateListing {
+        @Test
+        @DisplayName("valid request should return listing response")
+        void updateListing_validRequest_ReturnsListingResponse() {
+            UUID listingId = UUID.randomUUID();
+            String email = "test@gmail.com";
 
-        UpdateListingRequest updateListingRequest = new UpdateListingRequest();
-        updateListingRequest.setListingTitle("New title");
+            UpdateListingRequest updateListingRequest = new UpdateListingRequest();
+            updateListingRequest.setListingTitle("New title");
 
-        User user = new User();
-        user.setEmail(email);
+            User user = new User();
+            user.setEmail(email);
 
-        Location location = new Location();
-        location.setCountry("city");
-        location.setCity("city");
-        location.setAddress("city");
+            Location location = new Location();
+            location.setCountry("city");
+            location.setCity("city");
+            location.setAddress("city");
 
-        Listing listing = new Listing();
-        listing.setListingId(listingId);
-        listing.setUser(user);
-        listing.setTitle("Old title");
-        listing.setLocation(location);
+            Listing listing = new Listing();
+            listing.setListingId(listingId);
+            listing.setUser(user);
+            listing.setTitle("Old title");
+            listing.setLocation(location);
 
-        LocationRequest newLoc = new LocationRequest();
-        newLoc.setCountry("city");
-        newLoc.setCity("city");
-        newLoc.setAddress("city");
-        updateListingRequest.setLocationRequest(newLoc);
+            LocationRequest newLoc = new LocationRequest();
+            newLoc.setCountry("city");
+            newLoc.setCity("city");
+            newLoc.setAddress("city");
+            updateListingRequest.setLocationRequest(newLoc);
 
-        ListingResponse expectedResponse = new ListingResponse();
-        expectedResponse.setListingTitle("New title");
+            ListingResponse expectedResponse = new ListingResponse();
+            expectedResponse.setListingTitle("New title");
 
-        when(listingRepository.findByIdWithLock(listingId))
-                .thenReturn(Optional.of(listing));
-        when(userService.getCurrentUserEmail()).thenReturn(email);
-        when(listingMapper.toListingResponse(any(Listing.class))).thenReturn(expectedResponse);
+            when(listingRepository.findByIdWithLock(listingId))
+                    .thenReturn(Optional.of(listing));
+            when(userService.getCurrentUserEmail()).thenReturn(email);
+            when(listingMapper.toListingResponse(any(Listing.class))).thenReturn(expectedResponse);
 
-        ListingResponse result = listingService.updateListing(updateListingRequest, listingId);
+            ListingResponse result = listingService.updateListing(updateListingRequest, listingId);
 
-        assertEquals("New title", result.getListingTitle());
+            assertEquals("New title", result.getListingTitle());
 
-        verify(listingMapper).updateListing(updateListingRequest, listing);
+            verify(listingMapper).updateListing(updateListingRequest, listing);
+        }
+
+        @Test
+        @DisplayName("not owner of listing should throw IllegalStateException")
+        void updateListing_notOnwer_ThrowsIllegalStateException() {
+            UpdateListingRequest updateListingRequest = new UpdateListingRequest();
+            UUID listingId = UUID.randomUUID();
+            User user = new User();
+            user.setEmail("owner@gmail.com");
+            Listing listing = new Listing();
+            listing.setUser(user);
+            String email = "notOwner@gmail.com";
+
+            when(listingRepository.findByIdWithLock(listingId))
+                    .thenReturn(Optional.of(listing));
+            when(userService.getCurrentUserEmail()).thenReturn(email);
+
+            assertThatThrownBy(() -> listingService.updateListing(updateListingRequest, listingId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Not your listing");
+
+            verify(listingMapper, never()).updateListing(any(), any());
+        }
+
+        @Test
+        @DisplayName("valid request should create new loc and return listing response")
+        void updateListing_validRequestCreatingNewLoc_ReturnsListingResponse() {
+            UUID listingId = UUID.randomUUID();
+            String email = "test@gmail.com";
+
+            UpdateListingRequest updateListingRequest = new UpdateListingRequest();
+            updateListingRequest.setListingTitle("New title");
+
+            User user = new User();
+            user.setEmail(email);
+
+            Location location = new Location();
+            location.setCountry("old country");
+            location.setCity("old city");
+            location.setAddress("old address");
+
+            Listing listing = new Listing();
+            listing.setListingId(listingId);
+            listing.setUser(user);
+            listing.setTitle("Old title");
+            listing.setLocation(location);
+
+            LocationRequest newLoc = new LocationRequest();
+            newLoc.setCountry("new country");
+            newLoc.setCity("new city");
+            newLoc.setAddress("new address");
+            updateListingRequest.setLocationRequest(newLoc);
+
+            ListingResponse expectedResponse = new ListingResponse();
+            expectedResponse.setListingTitle("New title");
+
+            when(listingRepository.findByIdWithLock(listingId))
+                    .thenReturn(Optional.of(listing));
+            when(userService.getCurrentUserEmail()).thenReturn(email);
+            when(listingMapper.toListingResponse(any(Listing.class))).thenReturn(expectedResponse);
+
+            ListingResponse result = listingService.updateListing(updateListingRequest, listingId);
+
+            assertEquals("New title", result.getListingTitle());
+
+            verify(listingMapper).updateListing(updateListingRequest, listing);
+        }
     }
 
-    @Test
-    void updateListing_notOnwer_ThrowsIllegalStateException() {
-        UpdateListingRequest updateListingRequest = new UpdateListingRequest();
-        UUID listingId = UUID.randomUUID();
-        User user = new User();
-        user.setEmail("owner@gmail.com");
-        Listing listing = new Listing();
-        listing.setUser(user);
-        String email = "notOwner@gmail.com";
+    @Nested
+    @DisplayName("get listing")
+    class GetListing{
+        @Test
+        @DisplayName("get listing by id valid request should return listingResponse")
+        void getListingById_validRequest_ReturnsListingResponse() {
+            UUID listingId = UUID.randomUUID();
+            Listing listing = new Listing();
+            ListingResponse expectedResponse = new ListingResponse();
 
-        when(listingRepository.findByIdWithLock(listingId))
-                .thenReturn(Optional.of(listing));
-        when(userService.getCurrentUserEmail()).thenReturn(email);
+            when(listingRepository.findById(listingId))
+                    .thenReturn(Optional.of(listing));
+            when(listingMapper.toListingResponse(listing))
+                    .thenReturn(expectedResponse);
 
-        assertThatThrownBy(() -> listingService.updateListing(updateListingRequest, listingId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Not your listing");
+            ListingResponse result = listingService.getListingById(listingId);
 
-        verify(listingMapper, never()).updateListing(any(), any());
+            assertEquals(expectedResponse, result);
+
+            verify(listingRepository).findById(listingId);
+
+        }
+
+        @Test
+        @DisplayName("get listing by id fail request should throw EntityNotFoundException")
+        void getListingById_failRequest_ThrowsEntityNotFoundException() {
+            UUID listingId = UUID.randomUUID();
+
+            when(listingRepository.findById(listingId))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> listingService.getListingById(listingId))
+                    .isInstanceOf(EntityNotFoundException.class);
+
+            verify(listingRepository).findById(listingId);
+        }
+
+        @Test
+        @DisplayName("get listings which user owned valid request should return list of ListingResponse")
+        void getUsersListings_validRequest_ReturnsListOfListingResponse() {
+            String email = "test@gmail.com";
+            Listing listing = new Listing();
+            ListingResponse expectedResponse = new ListingResponse();
+            List<Listing> l1 = new ArrayList<>();
+            l1.add(listing);
+            List<ListingResponse> l2 = new ArrayList<>();
+            l2.add(expectedResponse);
+
+            when(listingRepository.findAllByUserEmail(email)).thenReturn(l1);
+            when(listingMapper.toListingResponse(any(Listing.class))).thenReturn(new ListingResponse());
+
+            List<ListingResponse> result = listingService.getUsersListings(email);
+            assertEquals(l2, result);
+
+            verify(listingRepository).findAllByUserEmail(email);
+        }
+
+        @Test
+        @DisplayName("get listings which user owned valid request should return empty list")
+        void getUsersListings_validRequest_ReturnsEmptyList() {
+            String email = "test@gmail.com";
+
+            when(listingRepository.findAllByUserEmail(email))
+                    .thenReturn(Collections.emptyList());
+
+            List<ListingResponse> result = listingService.getUsersListings(email);
+
+            assertTrue(result.isEmpty());
+
+            verify(listingRepository).findAllByUserEmail(email);
+        }
+
+        @Test
+        @DisplayName("get all listings valid request should return page of listing response")
+        void getAll_validRequest_ReturnsPageOfListingResponse() {
+            Pageable pageable = PageRequest.of(0, 2);
+
+            Listing l1 = new Listing();
+            Listing l2 = new Listing();
+
+            ListingResponse lr1 = new ListingResponse();
+            ListingResponse lr2 = new  ListingResponse();
+
+            List<Listing> listings = List.of(l1, l2);
+            Page<Listing> listingPage = new PageImpl<>(listings);
+
+            when(listingRepository.findAll(pageable)).thenReturn(listingPage);
+            when(listingMapper.toListingResponse(l1)).thenReturn(lr1);
+            when(listingMapper.toListingResponse(l2)).thenReturn(lr2);
+
+            Page<ListingResponse> result = listingService.getAll(pageable);
+
+            assertEquals(2, result.getContent().size());
+            assertEquals(lr1, result.getContent().get(0));
+            assertEquals(lr2, result.getContent().get(1));
+
+            verify(listingRepository).findAll(pageable);
+            verify(listingMapper).toListingResponse(l1);
+            verify(listingMapper).toListingResponse(l2);
+        }
+
+        @Test
+        @DisplayName("valid request should return listing")
+        void getListingOrThrow_validRequest_ReturnsListing() {
+            UUID listingId = UUID.randomUUID();
+
+            Listing expectedListing = new Listing();
+            expectedListing.setListingId(listingId);
+
+            when(listingRepository.findByIdWithLock(listingId))
+                    .thenReturn(Optional.of(expectedListing));
+
+            Listing result = listingService.getListingOrThrow(listingId);
+
+            assertSame(expectedListing, result);
+
+            verify(listingRepository).findByIdWithLock(listingId);
+        }
+
+        @Test
+        @DisplayName("fail request should throw entitynotfoundexception")
+        void getListingOrThrow_failRequest_ThrowsEntityNotFoundException() {
+            UUID listingId = UUID.randomUUID();
+
+            when(listingRepository.findByIdWithLock(listingId))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> listingService.getListingOrThrow(listingId))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage("entity not exists");
+
+            verify(listingRepository).findByIdWithLock(listingId);
+        }
     }
 
-    @Test
-    void updateListing_validRequestCreatingNewLoc_ReturnsListingResponse() {
-        UUID listingId = UUID.randomUUID();
-        String email = "test@gmail.com";
+    @Nested
+    @DisplayName("Delete listing")
+    class DeleteListing {
+        @Test
+        @DisplayName("delete listing by id valid request should delete listing")
+        void deleteListingById_validRequest_DeleteListing() {
+            UUID listingId = UUID.randomUUID();
 
-        UpdateListingRequest updateListingRequest = new UpdateListingRequest();
-        updateListingRequest.setListingTitle("New title");
+            ListingImage image = new ListingImage();
+            image.setFileName("test");
 
-        User user = new User();
-        user.setEmail(email);
+            List<ListingImage> images = new ArrayList<>();
+            images.add(image);
 
-        Location location = new Location();
-        location.setCountry("old country");
-        location.setCity("old city");
-        location.setAddress("old address");
+            Listing listing = new Listing();
+            listing.setListingImages(images);
 
-        Listing listing = new Listing();
-        listing.setListingId(listingId);
-        listing.setUser(user);
-        listing.setTitle("Old title");
-        listing.setLocation(location);
+            when(bookingRepository.existsActiveBookingsForListing(listingId)).thenReturn(false);
+            when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
 
-        LocationRequest newLoc = new LocationRequest();
-        newLoc.setCountry("new country");
-        newLoc.setCity("new city");
-        newLoc.setAddress("new address");
-        updateListingRequest.setLocationRequest(newLoc);
+            listingService.deleteListingById(listingId);
 
-        ListingResponse expectedResponse = new ListingResponse();
-        expectedResponse.setListingTitle("New title");
+            verify(minioService).deleteFile("test");
+            verify(listingRepository, times(1)).delete(listing);
+        }
 
-        when(listingRepository.findByIdWithLock(listingId))
-                .thenReturn(Optional.of(listing));
-        when(userService.getCurrentUserEmail()).thenReturn(email);
-        when(listingMapper.toListingResponse(any(Listing.class))).thenReturn(expectedResponse);
+        @Test
+        @DisplayName("delete listing by id. Exists active bookings should throw IllegalStateException")
+        void deleteListingById_existsActiveBookings_ThrowsIllegalStateException() {
+            UUID listingId = UUID.randomUUID();
 
-        ListingResponse result = listingService.updateListing(updateListingRequest, listingId);
+            when(bookingRepository.existsActiveBookingsForListing(listingId)).thenReturn(true);
 
-        assertEquals("New title", result.getListingTitle());
+            assertThatThrownBy(() -> listingService.deleteListingById(listingId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Cannot delete booking with active future bookings");
 
-        verify(listingMapper).updateListing(updateListingRequest, listing);
-    }
-
-    @Test
-    void getListingById_validRequest_ReturnsListingResponse() {
-        UUID listingId = UUID.randomUUID();
-        Listing listing = new Listing();
-        ListingResponse expectedResponse = new ListingResponse();
-
-        when(listingRepository.findById(listingId))
-                .thenReturn(Optional.of(listing));
-        when(listingMapper.toListingResponse(listing))
-                .thenReturn(expectedResponse);
-
-        ListingResponse result = listingService.getListingById(listingId);
-
-        assertEquals(expectedResponse, result);
-
-        verify(listingRepository).findById(listingId);
-
-    }
-
-    @Test
-    void getListingById_failRequest_ThrowsEntityNotFoundException() {
-        UUID listingId = UUID.randomUUID();
-
-        when(listingRepository.findById(listingId))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> listingService.getListingById(listingId))
-                .isInstanceOf(EntityNotFoundException.class);
-
-        verify(listingRepository).findById(listingId);
-    }
-
-    @Test
-    void getUsersListings_validRequest_ReturnsListOfListingResponse() {
-        String email = "test@gmail.com";
-        Listing listing = new Listing();
-        ListingResponse expectedResponse = new ListingResponse();
-        List<Listing> l1 = new ArrayList<>();
-        l1.add(listing);
-        List<ListingResponse> l2 = new ArrayList<>();
-        l2.add(expectedResponse);
-
-        when(listingRepository.findAllByUserEmail(email)).thenReturn(l1);
-        when(listingMapper.toListingResponse(any(Listing.class))).thenReturn(new ListingResponse());
-
-        List<ListingResponse> result = listingService.getUsersListings(email);
-        assertEquals(l2, result);
-
-        verify(listingRepository).findAllByUserEmail(email);
-    }
-
-    @Test
-    void getUsersListings_failRequest_ReturnsEmptyList() {
-        String email = "test@gmail.com";
-
-        when(listingRepository.findAllByUserEmail(email))
-                .thenReturn(Collections.emptyList());
-
-        List<ListingResponse> result = listingService.getUsersListings(email);
-
-        assertTrue(result.isEmpty());
-
-        verify(listingRepository).findAllByUserEmail(email);
-    }
-
-    @Test
-    void getAll_validRequest_ReturnsPageOfListingResponse() {
-        Pageable pageable = PageRequest.of(0, 2);
-
-        Listing l1 = new Listing();
-        Listing l2 = new Listing();
-
-        ListingResponse lr1 = new ListingResponse();
-        ListingResponse lr2 = new  ListingResponse();
-
-        List<Listing> listings = List.of(l1, l2);
-        Page<Listing> listingPage = new PageImpl<>(listings);
-
-        when(listingRepository.findAll(pageable)).thenReturn(listingPage);
-        when(listingMapper.toListingResponse(l1)).thenReturn(lr1);
-        when(listingMapper.toListingResponse(l2)).thenReturn(lr2);
-
-        Page<ListingResponse> result = listingService.getAll(pageable);
-
-        assertEquals(2, result.getContent().size());
-        assertEquals(lr1, result.getContent().get(0));
-        assertEquals(lr2, result.getContent().get(1));
-
-        verify(listingRepository).findAll(pageable);
-        verify(listingMapper).toListingResponse(l1);
-        verify(listingMapper).toListingResponse(l2);
-    }
-
-    @Test
-    void deleteListingById_validRequest_DeleteListingResponse() {
-        UUID listingId = UUID.randomUUID();
-
-        ListingImage image = new ListingImage();
-        image.setFileName("test");
-
-        List<ListingImage> images = new ArrayList<>();
-        images.add(image);
-
-        Listing listing = new Listing();
-        listing.setListingImages(images);
-
-        when(bookingRepository.existsActiveBookingsForListing(listingId)).thenReturn(false);
-        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
-
-        listingService.deleteListingById(listingId);
-
-        verify(minioService).deleteFile("test");
-        verify(listingRepository, times(1)).delete(listing);
-    }
-
-    @Test
-    void deleteListingById_existsActiveBookings_ThrowsIllegalStateException() {
-        UUID listingId = UUID.randomUUID();
-
-        when(bookingRepository.existsActiveBookingsForListing(listingId)).thenReturn(true);
-
-        assertThatThrownBy(() -> listingService.deleteListingById(listingId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Cannot delete booking with active future bookings");
-
-        verify(bookingRepository, never()).delete(any());
-    }
-
-    @Test
-    void getListingOrThrow_validRequest_ReturnsListing() {
-        UUID listingId = UUID.randomUUID();
-
-        Listing expectedListing = new Listing();
-        expectedListing.setListingId(listingId);
-
-        when(listingRepository.findByIdWithLock(listingId))
-                .thenReturn(Optional.of(expectedListing));
-
-        Listing result = listingService.getListingOrThrow(listingId);
-
-        assertSame(expectedListing, result);
-
-        verify(listingRepository).findByIdWithLock(listingId);
-    }
-
-    @Test
-    void getListingOrThrow_failRequest_ThrowsEntityNotFoundException() {
-        UUID listingId = UUID.randomUUID();
-
-        when(listingRepository.findByIdWithLock(listingId))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> listingService.getListingOrThrow(listingId))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("entity not exists");
-
-        verify(listingRepository).findByIdWithLock(listingId);
+            verify(bookingRepository, never()).delete(any());
+        }
     }
 }

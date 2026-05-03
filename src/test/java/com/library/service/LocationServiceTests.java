@@ -3,7 +3,8 @@ package com.library.service;
 import com.library.dto.location.LocationRequest;
 import com.library.entity.Location;
 import com.library.repository.LocationRepository;
-import jakarta.inject.Inject;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,51 +26,57 @@ public class LocationServiceTests {
     @Mock
     private LocationRepository locationRepository;
 
-    @Test
-    void createLocationOrGet_validRequest_ReturnsLocation(){
-        String country = "USA";
-        String city = "NY";
-        String address = "Wall St.";
-        LocationRequest request = new LocationRequest();
-        request.setCountry(country);
-        request.setCity(city);
-        request.setAddress(address);
+    @Nested
+    @DisplayName("create location")
+    class CreateLocation {
+        @Test
+        @DisplayName("valid request should get location and return")
+        void createLocationOrGet_validRequest_ReturnsLocation(){
+            String country = "USA";
+            String city = "NY";
+            String address = "Wall St.";
+            LocationRequest request = new LocationRequest();
+            request.setCountry(country);
+            request.setCity(city);
+            request.setAddress(address);
 
-        Location existingLoc = new Location();
-        existingLoc.setCountry(country.toLowerCase());
-        existingLoc.setCity(city.toLowerCase());
-        existingLoc.setAddress(address.toLowerCase());
+            Location existingLoc = new Location();
+            existingLoc.setCountry(country.toLowerCase());
+            existingLoc.setCity(city.toLowerCase());
+            existingLoc.setAddress(address.toLowerCase());
 
-        when(locationRepository.findByCountryAndCityAndAddress("usa", "ny", "wall st."))
-                .thenReturn(Optional.of(existingLoc));
+            when(locationRepository.findByCountryAndCityAndAddress("usa", "ny", "wall st."))
+                    .thenReturn(Optional.of(existingLoc));
 
-        Location result = locationService.createLocationOrGet(request);
+            Location result = locationService.createLocationOrGet(request);
 
-        assertNotNull(result);
-        assertEquals(existingLoc, result);
+            assertNotNull(result);
+            assertEquals(existingLoc, result);
 
-        verify(locationRepository, never()).save(any(Location.class));
-    }
+            verify(locationRepository, never()).save(any(Location.class));
+        }
 
-    @Test
-    void createLocationOrGet_CreateNewLocation_ReturnsLocation() {
-        LocationRequest request = new LocationRequest();
-        request.setCountry("Germany");
-        request.setCity("Berlin");
-        request.setAddress("Main St.");
+        @Test
+        @DisplayName("valid request should create and return location")
+        void createLocationOrGet_CreateNewLocation_ReturnsLocation() {
+            LocationRequest request = new LocationRequest();
+            request.setCountry("Germany");
+            request.setCity("Berlin");
+            request.setAddress("Main St.");
 
-        when(locationRepository.findByCountryAndCityAndAddress("germany", "berlin", "main st."))
-                .thenReturn(Optional.empty());
+            when(locationRepository.findByCountryAndCityAndAddress("germany", "berlin", "main st."))
+                    .thenReturn(Optional.empty());
 
-        when(locationRepository.save(any(Location.class))).thenAnswer(i -> i.getArgument(0));
+            when(locationRepository.save(any(Location.class))).thenAnswer(i -> i.getArgument(0));
 
-        Location result = locationService.createLocationOrGet(request);
+            Location result = locationService.createLocationOrGet(request);
 
-        assertNotNull(result);
-        assertEquals("germany", result.getCountry());
-        assertEquals("berlin", result.getCity());
-        assertEquals("main st.", result.getAddress());
+            assertNotNull(result);
+            assertEquals("germany", result.getCountry());
+            assertEquals("berlin", result.getCity());
+            assertEquals("main st.", result.getAddress());
 
-        verify(locationRepository).save(any(Location.class));
+            verify(locationRepository).save(any(Location.class));
+        }
     }
 }

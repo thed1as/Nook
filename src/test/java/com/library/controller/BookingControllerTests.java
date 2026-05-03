@@ -36,9 +36,9 @@ public class BookingControllerTests extends AbstractControllerTest {
     private BookingService bookingService;
 
     @Nested
-    @DisplayName("Booking (POST /bookings)")
+    @DisplayName("Booking (POST /booking)")
     class CreateBooking {
-        private final String URL = "/api/bookings";
+        private final String URL = "/api/booking";
 
         @Test
         @DisplayName("Return 201, if data is valid")
@@ -123,11 +123,11 @@ public class BookingControllerTests extends AbstractControllerTest {
     }
 
     @Nested
-    @DisplayName("Booking (GET /bookings/id")
+    @DisplayName("Booking (GET /booking/id")
     class GetBookingById {
         private final UUID listingId = UUID.randomUUID();
         private final UUID bookingId = UUID.randomUUID();
-        private final String URL = "/api/bookings/" + bookingId;
+        private final String URL = "/api/booking/" + bookingId;
 
         @Test
         @DisplayName("Get booking by id valid requests")
@@ -184,7 +184,7 @@ public class BookingControllerTests extends AbstractControllerTest {
     @DisplayName("Get my bookings (GET /bookings/{id}")
     class GetBookings {
         private final UUID listingId = UUID.randomUUID();
-        private final String URL = "/api/bookings/" + listingId;
+        private final String URL = "/api/booking/" + listingId;
 
         @Test
         @DisplayName("Get listing bookings (success)")

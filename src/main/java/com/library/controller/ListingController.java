@@ -34,7 +34,7 @@ public class ListingController {
 
     @Operation(summary = "Create listing")
     @PreAuthorize("hasRole('HOST')")
-    @PostMapping(value = "/listings")
+    @PostMapping(value = "/listing")
     public ResponseEntity<ListingResponse> create(
             @Parameter(description = "Данные о листинге")
             @Valid @RequestBody ListingRequest listingRequest)
@@ -45,7 +45,7 @@ public class ListingController {
 
     @Operation(summary = "Add image to the listing")
     @PreAuthorize("hasRole('HOST')")
-    @PostMapping(value = "/listings/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/listing/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ListingResponse> addImageToListing(
             @Parameter(description = "Изображение (jpg, png)")
             @RequestParam("files") List<MultipartFile> files,
@@ -57,7 +57,7 @@ public class ListingController {
 
     //    SEARCHING
 
-    @Operation(summary = "Find listings")
+    @Operation(summary = "Find listing")
     @GetMapping("/listing/{id}")
     public ResponseEntity<ListingResponse> get(@PathVariable UUID id) {
         ListingResponse lr = listingService.getListingById(id);

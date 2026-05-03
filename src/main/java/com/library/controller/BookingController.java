@@ -23,14 +23,14 @@ public class BookingController {
 
 //    CHANGE THAT USERNAME LATER TO AUTHENTICATION
     @Operation(summary = "Create booking")
-    @PostMapping("/bookings")
+    @PostMapping("/booking")
     public ResponseEntity<BookingResponse> create(@Valid @RequestBody BookingRequest bookingRequest) {
         BookingResponse br = bookingService.createBooking(bookingRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(br);
     }
 
     @Operation(summary = "Find booking by id")
-    @GetMapping("/bookings/{id}")
+    @GetMapping("/booking/{id}")
     public ResponseEntity<BookingResponse> get(@PathVariable UUID id) {
         BookingResponse br = bookingService.getBookingById(id);
         return ResponseEntity.ok(br);

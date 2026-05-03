@@ -47,7 +47,7 @@ public class ListingControllerTests extends AbstractControllerTest {
     @Nested
     @DisplayName("creating listing (post /listing)")
     class createListing{
-        private final String URL = "/api/listings";
+        private final String URL = "/api/listing";
 
         @Test
         @DisplayName("Valid request should return 200 and create listing")
