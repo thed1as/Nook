@@ -17,7 +17,6 @@ spring:
     expiration: 3600000
 
 minio:
-  # Заменяем localhost на переменную MINIO_HOST
   url: http://${MINIO_HOST:localhost}:9000
   access-key: ${MINIO_ACCESS_KEY:minio}
   secret-key: ${MINIO_SECRET_KEY:minio123}

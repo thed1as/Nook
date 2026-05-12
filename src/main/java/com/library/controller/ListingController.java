@@ -1,8 +1,10 @@
 package com.library.controller;
 
+import com.library.dto.listing.ListingFilterRequest;
 import com.library.dto.listing.ListingRequest;
 import com.library.dto.listing.ListingResponse;
 import com.library.dto.listing.UpdateListingRequest;
+import com.library.entity.Listing;
 import com.library.service.ListingService;
 import com.library.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,6 +80,21 @@ public class ListingController {
     @GetMapping("/listings")
     public ResponseEntity<Page<ListingResponse>> getListings(Pageable pageable) {
         Page<ListingResponse> llr = listingService.getAll(pageable);
+        return ResponseEntity.ok(llr);
+    }
+
+    @Operation(summary = "find all by filter")
+    @GetMapping("/listings/search")
+    public ResponseEntity<Page<ListingResponse>> getListingsByFilter(
+            @Valid ListingFilterRequest listingFilterRequest,
+            Pageable pageable) {
+
+        if(!listingFilterRequest.getCheckOut().isAfter(listingFilterRequest.getCheckIn())) {
+            throw new IllegalStateException("Invalid date range");
+        }
+
+        Page<ListingResponse> llr = listingService.getListingsByFilter(listingFilterRequest, pageable);
+
         return ResponseEntity.ok(llr);
     }
 

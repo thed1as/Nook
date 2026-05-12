@@ -340,6 +340,14 @@ public class ListingServiceTests {
 
             verify(listingRepository).findByIdWithLock(listingId);
         }
+//
+//        @Test
+//        @DisplayName("valid filter request should  return ListingResponse")
+//        void getListingByFilter_validRequest_ReturnsListingResponse() {
+//            UUID listingId = UUID.randomUUID();
+//
+//            when(listingS)
+//        }
     }
 
     @Nested

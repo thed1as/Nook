@@ -1,13 +1,11 @@
 package com.library.service;
 
+import com.library.dto.listing.ListingFilterRequest;
 import com.library.dto.listing.ListingRequest;
 import com.library.dto.listing.ListingResponse;
 import com.library.dto.listing.UpdateListingRequest;
 import com.library.dto.location.LocationRequest;
-import com.library.entity.Listing;
-import com.library.entity.ListingImage;
-import com.library.entity.Location;
-import com.library.entity.User;
+import com.library.entity.*;
 import com.library.mapper.ListingMapper;
 import com.library.mapper.LocationMapper;
 import com.library.repository.BookingRepository;
@@ -15,6 +13,8 @@ import com.library.repository.ListingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -134,6 +134,14 @@ public class ListingService {
 
     public Page<ListingResponse> getAll(Pageable pageable) {
         return listingRepository.findAll(pageable).map(listingMapper::toListingResponse);
+    }
+
+    public Page<ListingResponse> getListingsByFilter(ListingFilterRequest listingFilterRequest, Pageable pageable) {
+        Specification<Listing> spec = ListingSpecification.build(listingFilterRequest);
+
+        Page<ListingResponse> res = listingRepository.findAll(spec, pageable).map(listingMapper::toListingResponse);
+
+        return res;
     }
 
 //  DELETE
