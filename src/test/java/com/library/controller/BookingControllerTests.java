@@ -108,8 +108,8 @@ public class BookingControllerTests extends AbstractControllerTest {
         }
 
         @Test
-        @DisplayName("Return 401, if anonymous user trying to book")
-        void anonymousUser_ShouldReturn401() throws Exception {
+        @DisplayName("Return 403, if anonymous user trying to book")
+        void anonymousUser_ShouldReturn403() throws Exception {
             BookingRequest bookingRequest = new BookingRequest();
             bookingRequest.setListingId(UUID.randomUUID());
             bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(1));

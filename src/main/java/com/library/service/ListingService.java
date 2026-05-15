@@ -1,39 +1,42 @@
 package com.library.service;
 
-import com.library.dto.listing.ListingFilterRequest;
-import com.library.dto.listing.ListingRequest;
-import com.library.dto.listing.ListingResponse;
-import com.library.dto.listing.UpdateListingRequest;
+import com.library.dto.listing.*;
 import com.library.dto.location.LocationRequest;
 import com.library.entity.*;
 import com.library.mapper.ListingMapper;
-import com.library.mapper.LocationMapper;
+import com.library.mapper.ReviewMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
+import com.library.repository.ReviewRepository;
+import com.library.repository.ReviewStats;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Pageable;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ListingService {
     private final ListingRepository listingRepository;
     private final BookingRepository bookingRepository;
+    private final ReviewRepository reviewRepository;
+    private final ReviewMapper reviewMapper;
     private final UserService userService;
     private final LocationService locationService;
     private final MinioService minioService;
-    private final LocationMapper locationMapper;
     private final ListingMapper listingMapper;
 
 //    CREATE
@@ -119,11 +122,14 @@ public class ListingService {
 //    SEARCHING
 
     @Transactional(readOnly = true)
-    public ListingResponse getListingById(UUID listingId) {
-        return listingRepository
-                .findById(listingId)
-                .map(listingMapper::toListingResponse)
+    public FullListingResponse getListingById(UUID listingId) {
+        Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(EntityNotFoundException::new);
+
+        List<Review> top3 = reviewRepository
+                .findTop3ByListing_ListingIdOrderByCreatedAtDesc(listingId);
+
+        return listingMapper.toFullListingResponse(listing, top3);
     }
 
     @Transactional(readOnly = true)
@@ -132,8 +138,13 @@ public class ListingService {
                 .map(listingMapper::toListingResponse).collect(Collectors.toList());
     }
 
-    public Page<ListingResponse> getAll(Pageable pageable) {
-        return listingRepository.findAll(pageable).map(listingMapper::toListingResponse);
+    public Page<ShortListingResponse> getAll(Pageable pageable) {
+        Page<Listing> page = listingRepository.findAll(pageable);
+        page.stream().forEach(listing -> {
+            System.out.println(listing.getListingImages().size());
+            System.out.println(listing.getAverageRating() + " " + listing.getReviewsCount());
+        });
+        return page.map(listingMapper::toShortListingResponse);
     }
 
     public Page<ListingResponse> getListingsByFilter(ListingFilterRequest listingFilterRequest, Pageable pageable) {

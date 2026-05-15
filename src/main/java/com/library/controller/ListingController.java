@@ -1,9 +1,6 @@
 package com.library.controller;
 
-import com.library.dto.listing.ListingFilterRequest;
-import com.library.dto.listing.ListingRequest;
-import com.library.dto.listing.ListingResponse;
-import com.library.dto.listing.UpdateListingRequest;
+import com.library.dto.listing.*;
 import com.library.entity.Listing;
 import com.library.service.ListingService;
 import com.library.service.UserService;
@@ -61,8 +58,8 @@ public class ListingController {
 
     @Operation(summary = "Find listing")
     @GetMapping("/listing/{id}")
-    public ResponseEntity<ListingResponse> get(@PathVariable UUID id) {
-        ListingResponse lr = listingService.getListingById(id);
+    public ResponseEntity<FullListingResponse> get(@PathVariable UUID id) {
+        FullListingResponse lr = listingService.getListingById(id);
         return ResponseEntity.ok(lr);
     }
 
@@ -78,8 +75,8 @@ public class ListingController {
 
     @Operation(summary = "Find all listings")
     @GetMapping("/listings")
-    public ResponseEntity<Page<ListingResponse>> getListings(Pageable pageable) {
-        Page<ListingResponse> llr = listingService.getAll(pageable);
+    public ResponseEntity<Page<ShortListingResponse>> getListings(Pageable pageable) {
+        Page<ShortListingResponse> llr = listingService.getAll(pageable);
         return ResponseEntity.ok(llr);
     }
 

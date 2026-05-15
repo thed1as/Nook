@@ -41,4 +41,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         AND b.status IN ('CONFIRMED', 'CANCELLED')
     """)
     boolean existsActiveBookingsForListing(UUID listingId);
+
+    boolean existsBookingByListing_ListingIdAndUser_UserId(UUID listingListingId, UUID userUserId);
 }

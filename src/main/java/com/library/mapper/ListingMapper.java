@@ -1,10 +1,13 @@
 package com.library.mapper;
 
-import com.library.dto.listing.ListingRequest;
-import com.library.dto.listing.ListingResponse;
-import com.library.dto.listing.UpdateListingRequest;
+import com.library.dto.ListingImage.ListingImageResponse;
+import com.library.dto.listing.*;
 import com.library.entity.Listing;
+import com.library.entity.ListingImage;
+import com.library.entity.Review;
 import org.mapstruct.*;
+
+import java.util.List;
 
 @Mapper(
         componentModel = "spring",
@@ -17,12 +20,41 @@ public interface ListingMapper {
     @Mapping(target = "listingDescription", source = "description")
     @Mapping(target = "listingImages", source = "listingImages")
     @Mapping(target = "location", source = "location")
-    @Mapping(target = "reviews", source = "reviews")
     @Mapping(target = "pricePerNight", source = "pricePerNight")
     ListingResponse toListingResponse(Listing listing);
 
+
+    @Mapping(target = "listingId", source = "listing.listingId")
+    @Mapping(target = "listingTitle", source = "listing.title")
+    @Mapping(target = "listingDescription", source = "listing.description")
+    @Mapping(target = "listingImages", source = "listing.listingImages")
+    @Mapping(target = "location", source = "listing.location")
+    @Mapping(target = "reviewsCount", source = "listing.reviewsCount")
+    @Mapping(target = "averageRating", source = "listing.averageRating")
+    @Mapping(target = "pricePerNight", source = "listing.pricePerNight")
+    @Mapping(target = "reviews", source = "top3")
+    FullListingResponse toFullListingResponse(Listing listing, List<Review> top3);
+
+    @Mapping(target = "previewImage", source = "listingImages", qualifiedByName = "mapFirstImage")
+    @Mapping(target = "listingTitle", source = "title")
+    @Mapping(target = "location", source = "location")
+    @Mapping(target = "averageRating", source = "averageRating")
+    @Mapping(target = "reviewsCount", source = "reviewsCount")
+    ShortListingResponse toShortListingResponse(Listing listing);
+
+    @Named("mapFirstImage")
+    default ListingImageResponse mapFirstImage(List<ListingImage> listingImages) {
+        if(listingImages == null || listingImages.isEmpty()) {
+            return null;
+        }
+        ListingImage first = listingImages.getFirst();
+        return new ListingImageResponse(first.getListingImageId(), first.getFileName());
+    }
+
+
     @Mapping(target = "listingId", ignore = true)
     Listing toListing(ListingRequest listingRequest);
+
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateListing(UpdateListingRequest req, @MappingTarget Listing listing);

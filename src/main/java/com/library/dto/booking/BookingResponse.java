@@ -2,6 +2,7 @@ package com.library.dto.booking;
 
 import com.library.dto.ListingImage.ListingImageResponse;
 import com.library.dto.location.LocationResponse;
+import com.library.dto.review.ReviewRequest;
 import com.library.entity.ListingImage;
 import com.library.enums.Status;
 import lombok.AllArgsConstructor;
@@ -30,6 +31,7 @@ public class BookingResponse {
     private String listingDescription;
     private List<ListingImageResponse> listingImage;
     private LocationResponse location;
+    private List<ReviewRequest> reviewRequests;
 
     private String username;
 

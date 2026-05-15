@@ -1,9 +1,7 @@
 package com.library.controller;
 
 import com.library.config.SecurityConfig;
-import com.library.dto.listing.ListingRequest;
-import com.library.dto.listing.ListingResponse;
-import com.library.dto.listing.UpdateListingRequest;
+import com.library.dto.listing.*;
 import com.library.dto.location.LocationRequest;
 import com.library.service.ListingService;
 import com.library.service.UserService;
@@ -114,7 +112,7 @@ public class ListingControllerTests extends AbstractControllerTest {
         @DisplayName("valid request should return 200 and listing")
         @WithMockUser(roles = "USER")
         void validRequest_shouldReturnListing() throws Exception {
-            ListingResponse lr = new ListingResponse();
+            FullListingResponse lr = new FullListingResponse();
             lr.setListingId(listingId);
 
             when(listingService.getListingById(listingId)).thenReturn(lr);
@@ -185,15 +183,15 @@ public class ListingControllerTests extends AbstractControllerTest {
         @DisplayName("valid request, should return all listings (not empty)")
         @WithMockUser(roles = "USER")
         void validRequest_shouldReturnAllListings() throws Exception {
-            ListingResponse lr = new ListingResponse();
+            ShortListingResponse lr = new ShortListingResponse();
             lr.setListingTitle("test1");
-            ListingResponse lr2 = new ListingResponse();
+            ShortListingResponse lr2 = new ShortListingResponse();
             lr.setListingTitle("test2");
-            List<ListingResponse> llr = List.of(lr, lr2);
+            List<ShortListingResponse> llr = List.of(lr, lr2);
 
             Pageable pageable = PageRequest.of(0, 3);
 
-            Page<ListingResponse> pageResponse = new PageImpl<>(llr, pageable, llr.size());
+            Page<ShortListingResponse> pageResponse = new PageImpl<>(llr, pageable, llr.size());
 
             when(listingService.getAll(any(Pageable.class))).thenReturn(pageResponse);
 

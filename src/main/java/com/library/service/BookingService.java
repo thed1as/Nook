@@ -126,6 +126,7 @@ public class BookingService {
 
     @Transactional
     public List<BookingResponse> getListingBookings(UUID listingId) {
+//        show only if user have booking or its owner checking his listing bookings
         return bookingRepository.findListingBookingsById(listingId)
                 .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
     }

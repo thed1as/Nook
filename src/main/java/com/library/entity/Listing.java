@@ -50,6 +50,14 @@ public class Listing {
     @OneToMany(mappedBy = "listing")
     private List<Review> reviews = new ArrayList<>();
 
+    @Builder.Default
+    @Column(nullable = false)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Long reviewsCount = 0L;
+
     @OneToMany(mappedBy = "listingImg", cascade = CascadeType.ALL)
     private List<ListingImage> listingImages = new ArrayList<>();
 

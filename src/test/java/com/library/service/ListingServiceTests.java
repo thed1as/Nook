@@ -1,16 +1,12 @@
 package com.library.service;
 
-import com.library.dto.listing.ListingRequest;
-import com.library.dto.listing.ListingResponse;
-import com.library.dto.listing.UpdateListingRequest;
+import com.library.dto.listing.*;
 import com.library.dto.location.LocationRequest;
-import com.library.entity.Listing;
-import com.library.entity.ListingImage;
-import com.library.entity.Location;
-import com.library.entity.User;
+import com.library.entity.*;
 import com.library.mapper.ListingMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
+import com.library.repository.ReviewRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,6 +50,9 @@ public class ListingServiceTests {
 
     @Mock
     private ListingMapper listingMapper;
+
+    @Mock
+    private ReviewRepository reviewRepository;
 
     @Test
     @DisplayName("Create listing")
@@ -214,20 +213,34 @@ public class ListingServiceTests {
         @DisplayName("get listing by id valid request should return listingResponse")
         void getListingById_validRequest_ReturnsListingResponse() {
             UUID listingId = UUID.randomUUID();
-            Listing listing = new Listing();
-            ListingResponse expectedResponse = new ListingResponse();
 
+            Listing listing = new Listing();
+            listing.setListingId(listingId);
+            listing.setReviewsCount(5L);
+            listing.setAverageRating(BigDecimal.valueOf(4.5));
+
+            List<Review> top3 = List.of(
+                    new Review(),
+                    new Review(),
+                    new Review()
+            );
+
+            FullListingResponse expected = new FullListingResponse();
             when(listingRepository.findById(listingId))
                     .thenReturn(Optional.of(listing));
-            when(listingMapper.toListingResponse(listing))
-                    .thenReturn(expectedResponse);
+            when(reviewRepository.findTop3ByListing_ListingIdOrderByCreatedAtDesc(listingId))
+                    .thenReturn(top3);
 
-            ListingResponse result = listingService.getListingById(listingId);
+            when(listingMapper.toFullListingResponse(listing, top3))
+                    .thenReturn(expected);
 
-            assertEquals(expectedResponse, result);
+            FullListingResponse result = listingService.getListingById(listingId);
+
+            assertEquals(expected, result);
 
             verify(listingRepository).findById(listingId);
-
+            verify(reviewRepository)
+                    .findTop3ByListing_ListingIdOrderByCreatedAtDesc(listingId);
         }
 
         @Test
@@ -287,25 +300,25 @@ public class ListingServiceTests {
             Listing l1 = new Listing();
             Listing l2 = new Listing();
 
-            ListingResponse lr1 = new ListingResponse();
-            ListingResponse lr2 = new  ListingResponse();
+            ShortListingResponse lr1 = new ShortListingResponse();
+            ShortListingResponse lr2 = new  ShortListingResponse();
 
             List<Listing> listings = List.of(l1, l2);
             Page<Listing> listingPage = new PageImpl<>(listings);
 
             when(listingRepository.findAll(pageable)).thenReturn(listingPage);
-            when(listingMapper.toListingResponse(l1)).thenReturn(lr1);
-            when(listingMapper.toListingResponse(l2)).thenReturn(lr2);
+            when(listingMapper.toShortListingResponse(l1)).thenReturn(lr1);
+            when(listingMapper.toShortListingResponse(l2)).thenReturn(lr2);
 
-            Page<ListingResponse> result = listingService.getAll(pageable);
+            Page<ShortListingResponse> result = listingService.getAll(pageable);
 
             assertEquals(2, result.getContent().size());
             assertEquals(lr1, result.getContent().get(0));
             assertEquals(lr2, result.getContent().get(1));
 
             verify(listingRepository).findAll(pageable);
-            verify(listingMapper).toListingResponse(l1);
-            verify(listingMapper).toListingResponse(l2);
+            verify(listingMapper).toShortListingResponse(l1);
+            verify(listingMapper).toShortListingResponse(l2);
         }
 
         @Test

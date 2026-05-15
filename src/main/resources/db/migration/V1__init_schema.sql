@@ -27,6 +27,8 @@ CREATE TABLE listing
     created_at      timestamp(6),
     description     varchar(255),
     price_per_night numeric(38, 2),
+    average_rating numeric(3, 2) DEFAULT 0.0,
+    reviews_count bigInt DEFAULT 0,
     title           varchar(255),
     updated_at      timestamp(6),
 
