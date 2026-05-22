@@ -1,7 +1,6 @@
 package com.library.repository;
 
 import com.library.entity.Booking;
-import com.library.entity.Listing;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,8 +27,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT b FROM Booking b WHERE b.user.email = :email")
     List<Booking> findUserBookingsByEmail(String email);
-
-    UUID listing(Listing listing);
 
     @Query("SELECT b FROM Booking b WHERE b.listing.listingId = :listingId")
     List<Booking> findListingBookingsById(UUID listingId);

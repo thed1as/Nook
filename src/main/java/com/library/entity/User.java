@@ -40,6 +40,9 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Listing> listings = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user")
+    private List<Payment> payments = new ArrayList<>();
+
 //    helper methods
 //    booking
     public void addBooking(Booking booking) {
@@ -72,5 +75,10 @@ public class User {
     public void removeListing(Listing listing) {
         listings.remove(listing);
         listing.setUser(null);
+    }
+
+    public void addPayment(Payment payment) {
+        payments.add(payment);
+        payment.setUser(this);
     }
 }

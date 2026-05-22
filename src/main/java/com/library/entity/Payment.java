@@ -1,6 +1,7 @@
 package com.library.entity;
 
-import com.library.enums.Status;
+import com.library.enums.PaymentMethod;
+import com.library.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,21 +17,28 @@ import java.util.UUID;
 @Entity @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "booking")
-public class Booking {
-
+@Table(name = "payment")
+public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID bookingId;
-
-    private LocalDateTime checkInDate;
-    private LocalDateTime checkOutDate;
+    private UUID paymentId;
 
     @Column(precision = 38, scale = 2)
-    private BigDecimal totalPrice;
+    private BigDecimal amount;
+
+    @Column(nullable = false)
+    private String currency;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    @Column(nullable = false)
+    private PaymentStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod method;
+
+    @Column(nullable = false)
+    private String stripeId;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -38,16 +46,12 @@ public class Booking {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
 //    Connections
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "listing_id")
-    private Listing listing;
-
-    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL)
-    private Payment payment;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false, unique = true)
+    private Booking booking;
 }

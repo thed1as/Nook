@@ -12,10 +12,10 @@ CREATE TABLE location
 CREATE TABLE users
 (
     user_id  uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    email    varchar(255),
-    password varchar(255),
-    role     varchar(255),
-    username varchar(255),
+    email    varchar(255) NOT NULL,
+    password varchar(255) NOT NULL,
+    role     varchar(255) NOT NULL,
+    username varchar(255) NOT NULL,
 
     CONSTRAINT users_role_check
         CHECK (role::text = ANY ((ARRAY['USER','HOST','ADMIN'])::text[]))
@@ -27,8 +27,8 @@ CREATE TABLE listing
     created_at      timestamp(6),
     description     varchar(255),
     price_per_night numeric(38, 2),
-    average_rating numeric(3, 2) DEFAULT 0.0,
-    reviews_count bigInt DEFAULT 0,
+    average_rating  numeric(3, 2) DEFAULT 0.0,
+    reviews_count   bigInt DEFAULT 0,
     title           varchar(255),
     updated_at      timestamp(6),
 
@@ -65,10 +65,41 @@ CREATE TABLE booking
         FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
+CREATE TABLE payment
+(
+    payment_id uuid           NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    amount     numeric(38, 2) NOT NULL,
+    currency   varchar(10)    NOT NULL,
+    status     varchar(50)    NOT NULL,
+
+    method     varchar(50)    NOT NULL,
+    stripe_id  varchar(255),
+
+    created_at timestamp(6)   NOT NULL,
+    updated_at timestamp(6)   NOT NULL,
+
+    booking_id uuid           NOT NULL,
+    user_id    uuid           NOT NULL,
+
+    CONSTRAINT payment_status_check
+        CHECK (status::text = ANY ((ARRAY['PENDING','COMPLETED','FAILED','REFUNDED','CANCELLED'])::text[])),
+
+    CONSTRAINT payment_method_check
+        CHECK (method::text = ANY ((ARRAY['CREDIT_CARD','DEBIT_CARD','PAYPAL'])::text[])),
+
+    CONSTRAINT uk_payment_booking UNIQUE (booking_id),
+
+    CONSTRAINT fk_payment_booking
+        FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
+
+    CONSTRAINT fk_payment_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
 CREATE TABLE listing_image
 (
     listing_image_id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    file_name              varchar(255),
+    file_name        varchar(255),
     listing_id       uuid,
 
     CONSTRAINT fk_listing_image_listing
@@ -103,11 +134,9 @@ CREATE INDEX idx_listing_image_listing_id ON listing_image (listing_id);
 CREATE INDEX idx_reviews_listing_id  ON reviews (listing_listing_id);
 CREATE INDEX idx_reviews_user_id     ON reviews (user_user_id);
 
-ALTER TABLE users
-    ALTER COLUMN email SET NOT NULL,
-    ALTER COLUMN password SET NOT NULL,
-    ALTER COLUMN username SET NOT NULL,
-    ALTER COLUMN role SET NOT NULL;
+CREATE INDEX idx_payment_user_id     ON payment (user_id);
+
+CREATE INDEX idx_payment_stripe_id   ON payment (stripe_id);
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 

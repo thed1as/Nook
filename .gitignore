@@ -40,3 +40,6 @@ build/
 
 ### Docker ###
 .dockerignore
+
+# ENVIRONMENTS
+.env

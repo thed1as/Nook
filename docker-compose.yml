@@ -4,13 +4,15 @@ services:
     image: postgres:15-alpine
     container_name: nook-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      # Берем логин и пароль для создания базы из .env
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: nook_db
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d nook_db"]
+      # Проверка здоровья тоже использует переменную
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d nook_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,8 +24,9 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
+      # Берем ключи для MinIO из .env
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
 
   app:
@@ -35,10 +38,28 @@ services:
       db:
         condition: service_healthy
     environment:
+      # Передаем все секреты из .env внутрь Spring Boot
       DB_HOST: db
-      DB_USERNAME: postgres
-      DB_PASSWORD: root
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       MINIO_HOST: minio
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
-      MINIO_BUCKET: listing-images
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      SECURITY_KEY: ${SECURITY_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: stripe_cli
+    command: >
+      listen
+      --api-key ${STRIPE_SECRET_KEY}
+      --forward-to app:8080/api/stripe-notifications
+      --skip-verify
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY}
+    depends_on:
+      - app
