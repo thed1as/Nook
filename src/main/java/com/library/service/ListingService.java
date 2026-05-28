@@ -97,7 +97,7 @@ public class ListingService {
     @Transactional
     public ListingResponse updateListing(UpdateListingRequest req,
                                          UUID listingId) {
-        Listing listing = getListingOrThrow(listingId);
+        Listing listing = getListingDetailedOrThrow(listingId);
         String email = userService.getCurrentUserEmail();
         if(!listing.getUser().getEmail().equals(email)) {
             throw new IllegalStateException("Not your listing");
@@ -148,11 +148,22 @@ public class ListingService {
     }
 
     public Page<ListingResponse> getListingsByFilter(ListingFilterRequest listingFilterRequest, Pageable pageable) {
+        if(listingFilterRequest.getCheckOut() != null && listingFilterRequest.getCheckIn() != null && !listingFilterRequest.getCheckOut().isAfter(listingFilterRequest.getCheckIn())) {
+            throw new IllegalStateException("Invalid date range");
+        }
+
         Specification<Listing> spec = ListingSpecification.build(listingFilterRequest);
+        Page<Listing> res = listingRepository.findAll(spec, pageable);
 
-        Page<ListingResponse> res = listingRepository.findAll(spec, pageable).map(listingMapper::toListingResponse);
+        if (res.isEmpty()) {
+            return Page.empty(pageable);
+        }
 
-        return res;
+        List<UUID> listingIds = res.getContent().stream().map(Listing::getListingId).toList();
+
+        listingRepository.findAllWithRelationByIds(listingIds);
+
+        return res.map(listingMapper::toListingResponse);
     }
 
 //  DELETE
@@ -168,7 +179,7 @@ public class ListingService {
         for(ListingImage image : images) {
             minioService.deleteFile(image.getFileName());
         }
-        listingRepository.delete(listing);
+        listingRepository.deleteDetailedById(listing.getListingId());
     }
 
 
@@ -176,6 +187,12 @@ public class ListingService {
     @Transactional(readOnly = true)
     public Listing getListingOrThrow(UUID listingId) {
         return listingRepository.findByIdWithLock(listingId)
+                .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
+    }
+
+    @Transactional(readOnly = true)
+    public Listing getListingDetailedOrThrow(UUID listingId) {
+        return listingRepository.findByDetailedIdWithLock(listingId)
                 .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
     }
 

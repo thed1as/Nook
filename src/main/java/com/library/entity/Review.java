@@ -3,6 +3,7 @@ package com.library.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.util.UUID;
 @Getter @Setter @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@DynamicUpdate
 @Table(name = "reviews")
 public class Review {
     @Id
@@ -25,10 +27,10 @@ public class Review {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Listing listing;
 
 }

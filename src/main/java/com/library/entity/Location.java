@@ -13,7 +13,8 @@ import java.util.UUID;
 @Entity @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "location", uniqueConstraints = {@UniqueConstraint(name = "UniqueAddress", columnNames = {"country", "city", "address"})})
+@Table(name = "location", uniqueConstraints = {@UniqueConstraint(name = "UniqueAddress", columnNames = {"country", "city", "address"})},
+    indexes = @Index(name = "idx_location", columnList = "country, city, address"))
 public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -1,10 +1,18 @@
 package com.library.service;
 
 import com.library.dto.booking.BookingRequest;
+import com.library.dto.checkout.BookingCheckoutRequest;
+import com.library.dto.checkout.BookingCheckoutResponse;
+import com.library.dto.exception.customException.forbiden.ForbiddenUserException;
+import com.library.dto.payment.PaymentRequest;
 import com.library.entity.Booking;
 import com.library.entity.Listing;
+import com.library.entity.Payment;
 import com.library.entity.User;
+import com.library.enums.PaymentMethod;
+import com.library.enums.PaymentStatus;
 import com.library.enums.Status;
+import com.library.mapper.BookingCheckoutMapper;
 import com.library.mapper.BookingMapper;
 import com.library.repository.BookingRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -12,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,6 +28,7 @@ import com.library.dto.booking.BookingResponse;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -43,179 +53,179 @@ public class BookingServiceTest {
     private ListingService listingService;
 
     @Mock
+    private PaymentService paymentService;
+
+    @Mock
     private BookingRepository bookingRepository;
 
     @Mock
     private BookingMapper bookingMapper;
+
+    @Mock
+    private BookingCheckoutMapper bookingCheckoutMapper;
 
 //    Booking creating tests
 
     @Nested
     @DisplayName("Create booking")
     class CreateBooking {
-        @Test
-        @DisplayName("Valid request should return bookingResponse")
-        void createBooking_ValidRequest_ReturnsBookingResponse() {
-            String email = "test@gmail.com";
+        private final UUID listingId = UUID.randomUUID();
+        private final LocalDateTime checkInDate = LocalDateTime.now().plusDays(1)
+                .with(LocalTime.NOON);
+        private final LocalDateTime checkOutDate = LocalDateTime.now().plusDays(3)
+                .with(LocalTime.NOON);
+        private final PaymentMethod paymentMethod = PaymentMethod.CREDIT_CARD;
+        private final String currency = "USD";
+        private final String stripeId = "pi_testtesttesttesttesttest";
 
+        private BookingCheckoutRequest createRequest() {
+            BookingCheckoutRequest ret = new BookingCheckoutRequest();
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setPaymentMethod(paymentMethod);
+            paymentRequest.setCurrency(currency);
             BookingRequest bookingRequest = new BookingRequest();
-            UUID bookingId = UUID.randomUUID();
-            bookingRequest.setListingId(bookingId);
-            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(2));
-            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(3));
+            bookingRequest.setListingId(listingId);
+            bookingRequest.setCheckInDate(checkInDate);
+            bookingRequest.setCheckOutDate(checkOutDate);
 
-            User user = new User();
-            user.setEmail(email);
-
-            User owner = new User();
-            owner.setEmail("owner@gmail.com");
-
-            Listing listing = new Listing();
-            listing.setPricePerNight(BigDecimal.valueOf(25000));
-            listing.setUser(owner);
-
-            Booking booking = new Booking();
-            BookingResponse response = new BookingResponse();
-
-            when(userService.getCurrentUserEmail()).thenReturn(email);
-            when(userService.getUserByEmail(email)).thenReturn(user);
-            when(listingService.getListingOrThrow(bookingId)).thenReturn(listing);
-            when(bookingRepository.isListOccupied(any(), any(), any())).thenReturn(false);
-            when(bookingMapper.toBookingResponse(any())).thenReturn(response);
-
-            BookingResponse result = bookingService.createBooking(bookingRequest);
-
-            assertThat(result).isNotNull();
-
-            verify(bookingRepository, times(1)).save(any(Booking.class));
+            ret.setBookingRequest(bookingRequest);
+            ret.setPaymentRequest(paymentRequest);
+            return ret;
         }
 
         @Test
-        @DisplayName("Check out before checkIn should throw IllegalStateException")
-        void createBooking_CheckOutBeforeCheckIn_ThrowsIllegalStateException() {
+        @DisplayName("valid request should return bookingCheckoutResponse")
+        void validRequest_ReturnsBookingCheckoutResponse() {
+            BookingCheckoutRequest bookingCheckoutRequest = createRequest();
+            String email = "guest@gmail.com";
+            User user = new User();
+            user.setEmail(email);
+
+            Listing listing = new Listing();
+            listing.setPricePerNight(BigDecimal.valueOf(100));
+            User host = new User();
+            host.setEmail("host@gmail.com");
+            listing.setUser(host);
+
+            BookingResponse expectedResponse = new BookingResponse();
+            expectedResponse.setListingId(listingId);
+            expectedResponse.setCheckInDate(checkInDate);
+            expectedResponse.setCheckOutDate(checkOutDate);
+
+            BookingCheckoutResponse expectedCheckoutResponse = new BookingCheckoutResponse();
+            expectedCheckoutResponse.setBookingResponse(expectedResponse);
+            expectedCheckoutResponse.setStripeId(stripeId);
+
+            when(userService.getCurrentUserEmail()).thenReturn(email);
+            when(userService.getUserByEmail(email)).thenReturn(user);
+            when(listingService.getListingOrThrow(listingId)).thenReturn(listing);
+            when(bookingRepository.isListOccupied(any(), any(), any())).thenReturn(false);
+            when(paymentService.initializePayment(any(Booking.class), any(PaymentRequest.class)))
+                    .thenReturn(stripeId);
+            when(bookingMapper.toBookingResponse(any(Booking.class))).thenReturn(expectedResponse);
+            when(bookingCheckoutMapper.toBookingCheckoutResponse(expectedResponse, stripeId))
+                    .thenReturn(expectedCheckoutResponse);
+
+            BookingCheckoutResponse bookingCheckoutResponse = bookingService
+                    .createBooking(bookingCheckoutRequest);
+
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+
+            Booking booking = bookingCaptor.getValue();
+            assertThat(booking.getCheckInDate()).isEqualTo(checkInDate);
+            assertThat(booking.getCheckOutDate()).isEqualTo(checkOutDate);
+
+            assertThat(bookingCheckoutResponse).isNotNull();
+            assertThat(bookingCheckoutResponse.getBookingResponse()).isEqualTo(expectedResponse);
+            assertThat(bookingCheckoutResponse.getStripeId()).isEqualTo(expectedCheckoutResponse.getStripeId());
+        }
+
+        @Test
+        @DisplayName("CheckOut before checkIn should throw IllegalStateException")
+        void checkOutBeforeCheckIn_ThrowsIllegalStateException() {
+            BookingCheckoutRequest bookingCheckoutRequest = createRequest();
             BookingRequest bookingRequest = new BookingRequest();
             bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(3));
             bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(2));
+            bookingCheckoutRequest.setBookingRequest(bookingRequest);
 
-            assertThatThrownBy(() -> bookingService.createBooking(bookingRequest))
-                    .isInstanceOf(IllegalStateException.class).hasMessage("Invalid date range");
-
-            verify(bookingRepository, never()).save(any(Booking.class));
-        }
-
-        @Test
-        @DisplayName("Check in date in past should throw IllegalStateException")
-        void createBooking_CheckInDateInPast_ThrowsIllegalStateException(){
-            BookingRequest bookingRequest = new BookingRequest();
-            LocalDateTime start = LocalDateTime.of(2012, 12, 12, 12, 12);
-            bookingRequest.setCheckInDate(start);
-            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(3));
-
-            assertThatThrownBy(() -> bookingService.createBooking(bookingRequest))
-                    .isInstanceOf(IllegalStateException.class).hasMessage("Check-in in the past");
+            assertThatThrownBy(() -> bookingService.createBooking(bookingCheckoutRequest))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Invalid date range");
 
             verify(bookingRepository, never()).save(any(Booking.class));
         }
 
         @Test
-        @DisplayName("User who trying to book is listing owner should throw IllegalStateException")
-            void createBooking_UserIsListingOwner_ThrowsIllegalStateException() {
-                String email = "test@gmail.com";
+        @DisplayName("Check in in the past should throw IllegalStateException")
+        void checkInInPast_ThrowsIllegalStateException() {
+            BookingCheckoutRequest bookingCheckoutRequest = createRequest();
+            BookingRequest bookingRequest = new BookingRequest();
+            bookingRequest.setCheckInDate(LocalDateTime.of(2012, 12, 12, 12, 12));
+            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(3).with(LocalTime.NOON));
+            bookingCheckoutRequest.setBookingRequest(bookingRequest);
 
-                BookingRequest bookingRequest = new BookingRequest();
-                UUID bookingId = UUID.randomUUID();
-                bookingRequest.setListingId(bookingId);
-                bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(2));
-                bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(4));
+            assertThatThrownBy(() -> bookingService.createBooking(bookingCheckoutRequest))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Check-in in the past");
 
-                User user = new User();
-                user.setEmail(email);
-
-                Listing listing = new Listing();
-                listing.setPricePerNight(BigDecimal.valueOf(25000));
-                listing.setUser(user);
-
-                Booking booking = new Booking();
-                BookingResponse response = new BookingResponse();
-
-                when(userService.getCurrentUserEmail()).thenReturn(email);
-                when(userService.getUserByEmail(email)).thenReturn(user);
-                when(listingService.getListingOrThrow(bookingId)).thenReturn(listing);
-                assertThatThrownBy(() -> bookingService.createBooking(bookingRequest))
-                        .isInstanceOf(IllegalStateException.class).hasMessage("You cannot book your own listing!");
-
-                verify(bookingRepository, never()).save(any(Booking.class));
-            }
+            verify(bookingRepository, never()).save(any(Booking.class));
+        }
 
         @Test
-        @DisplayName("Listing is already occupied should throw IllegalStateException")
-        void createBooking_ListingIsOccupied_ThrowsIllegalStateException() {
-            String email = "test@gmail.com";
-
-            BookingRequest bookingRequest = new BookingRequest();
-            UUID bookingId = UUID.randomUUID();
-            bookingRequest.setListingId(bookingId);
-            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(2));
-            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(4));
+        @DisplayName("User trying to book his own listing should throw IllegalStateException")
+        void UserIsListingOwner_shouldThrowIllegalStateException() {
+            BookingCheckoutRequest bookingCheckoutRequest = createRequest();
+            String email = "guest@gmail.com";
 
             User user = new User();
             user.setEmail(email);
 
-            User owner = new User();
-            owner.setEmail("owner@gmail.com");
-
             Listing listing = new Listing();
-            listing.setPricePerNight(BigDecimal.valueOf(25000));
-            listing.setUser(owner);
+            listing.setUser(user);
 
             when(userService.getCurrentUserEmail()).thenReturn(email);
             when(userService.getUserByEmail(email)).thenReturn(user);
-            when(listingService.getListingOrThrow(bookingId)).thenReturn(listing);
+            when(listingService.getListingOrThrow(listingId)).thenReturn(listing);
+
+            assertThatThrownBy(() -> bookingService.createBooking(bookingCheckoutRequest))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("You cannot book your own listing!");
+
+            verify(bookingRepository, never()).save(any(Booking.class));
+        }
+
+        @Test
+        @DisplayName("Booking is already occupied should throw IllegalStateException")
+        void listingIsOccupied_ShouldThrowIllegalStateException() {
+            BookingCheckoutRequest bookingCheckoutRequest = createRequest();
+
+            String email = "guest@gmail.com";
+            User user = new User();
+            user.setEmail(email);
+
+            User user2 = new User();
+            user2.setEmail("host@gmail.com");
+
+            Listing listing = new Listing();
+            listing.setUser(user2);
+
+            when(userService.getCurrentUserEmail()).thenReturn(email);
+            when(userService.getUserByEmail(email)).thenReturn(user);
+            when(listingService.getListingOrThrow(listingId)).thenReturn(listing);
             when(bookingRepository.isListOccupied(any(), any(), any())).thenReturn(true);
 
-            assertThatThrownBy(() -> bookingService.createBooking(bookingRequest))
-                    .isInstanceOf(IllegalStateException.class).hasMessage("Listing is already occupied");
-
-            verify(bookingRepository, never()).save(any(Booking.class));
-        }
-
-        @Test
-        @DisplayName("Cannot be booked for less than a day should throw IllegalStateException")
-        void createBooking_DaysMoreThanOne_IllegalStateException() {
-            String email = "test@gmail.com";
-
-            BookingRequest bookingRequest = new BookingRequest();
-            UUID bookingId = UUID.randomUUID();
-            LocalDateTime start = LocalDateTime.of(2026, 10, 10, 12, 0);
-            bookingRequest.setCheckInDate(start);
-            bookingRequest.setCheckOutDate(start.plusHours(2));
-            bookingRequest.setListingId(bookingId);
-
-            User user = new User();
-            user.setEmail(email);
-
-            User owner = new User();
-            owner.setEmail("owner@gmail.com");
-
-            Listing listing = new Listing();
-            listing.setUser(owner);
-
-            when(userService.getCurrentUserEmail()).thenReturn(email);
-            when(userService.getUserByEmail(email)).thenReturn(user);
-            when(listingService.getListingOrThrow(bookingId)).thenReturn(listing);
-            when(bookingRepository.isListOccupied(any(),any(),any())).thenReturn(false);
-
-            assertThatThrownBy(() -> bookingService.createBooking(bookingRequest))
+            assertThatThrownBy(() -> bookingService.createBooking(bookingCheckoutRequest))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Minimum booking period is 1 night");
-
-            verify(bookingRepository, never()).save(any(Booking.class));
+                    .hasMessage("Listing is already occupied");
         }
     }
 
     @Nested
     @DisplayName("Cancel booking")
     class CancelBooking {
+        private final UUID bookingId = UUID.randomUUID();
 
         @Test
         @DisplayName("valid request should cancel booking response")
@@ -226,10 +236,14 @@ public class BookingServiceTest {
             User user = new User();
             user.setEmail(email);
 
+            Payment payment = new Payment();
+            payment.setStatus(PaymentStatus.COMPLETED);
+
             Booking booking = new Booking();
             booking.setCreatedAt(LocalDateTime.now());
             booking.setBookingId(bookingId);
             booking.setUser(user);
+            booking.setPayment(payment);
             booking.setStatus(Status.PENDING);
             booking.setCheckInDate(LocalDateTime.now().plusDays(2));
 
@@ -292,7 +306,7 @@ public class BookingServiceTest {
             when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
 
             assertThatThrownBy(() -> bookingService.cancelBooking(bookingId))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(ForbiddenUserException.class)
                     .hasMessage("You is not owner of booking");
 
             verify(bookingRepository, never()).save(any(Booking.class));
@@ -367,7 +381,6 @@ public class BookingServiceTest {
 
             verify(bookingRepository, never()).save(any(Booking.class));
         }
-
     }
 
     @Nested

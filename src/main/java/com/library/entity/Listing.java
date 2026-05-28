@@ -1,9 +1,10 @@
 package com.library.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @Entity
 @Getter @Setter @Builder @AllArgsConstructor
 @NoArgsConstructor
+@DynamicUpdate
 @Table(name = "listing")
 public class Listing {
     @Id
@@ -36,11 +38,11 @@ public class Listing {
 
 //    Connections
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
     private Location location;
 
@@ -59,6 +61,8 @@ public class Listing {
     private Long reviewsCount = 0L;
 
     @OneToMany(mappedBy = "listingImg", cascade = CascadeType.ALL)
+    @Fetch(FetchMode.SUBSELECT)
+    @BatchSize(size = 20)
     private List<ListingImage> listingImages = new ArrayList<>();
 
 

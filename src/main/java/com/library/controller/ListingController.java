@@ -86,10 +86,6 @@ public class ListingController {
             @Valid ListingFilterRequest listingFilterRequest,
             Pageable pageable) {
 
-        if(!listingFilterRequest.getCheckOut().isAfter(listingFilterRequest.getCheckIn())) {
-            throw new IllegalStateException("Invalid date range");
-        }
-
         Page<ListingResponse> llr = listingService.getListingsByFilter(listingFilterRequest, pageable);
 
         return ResponseEntity.ok(llr);

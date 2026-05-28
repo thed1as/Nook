@@ -14,10 +14,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,133 +39,27 @@ public class PaymentControllerTests extends AbstractControllerTest{
     private PaymentService paymentService;
 
     @Nested
-    @DisplayName("creating payment (post /payments")
-    class CreatePayment {
-        private final String URL = "/api/payments";
+    @DisplayName("Payment (GET /payments/booking/{bookingId}")
+    class get {
         private final UUID bookingId = UUID.randomUUID();
+        private final String URL = "/api/payments/booking/" + bookingId;
 
         @Test
-        @DisplayName("Valid request should return 201 and create payment")
+        @DisplayName("Return 200, and page of paymentResponse")
         @WithMockUser(roles = "USER")
-        void validRequest_shouldReturn200AndCreatePayment() throws Exception {
-            PaymentRequest paymentRequest = new PaymentRequest();
-            paymentRequest.setBookingId(bookingId);
-            paymentRequest.setPaymentMethod(PaymentMethod.DEBIT_CARD);
-            paymentRequest.setCurrency("USD");
+        void validRequest_shouldReturn200 () throws Exception {
+            Pageable pageable = PageRequest.of(0, 10);
+            PaymentResponse pr1 = new PaymentResponse();
+            PaymentResponse pr2 = new PaymentResponse();
+            List<PaymentResponse> ppl = List.of(pr1, pr2);
+            Page<PaymentResponse> pageResponse = new PageImpl<>(ppl, pageable, ppl.size());
 
-            PaymentResponse paymentResponse = new PaymentResponse();
+            when(paymentService.getPaymentsByBookingId(bookingId, pageable)).thenReturn(pageResponse);
 
-            when(paymentService.createPayment(any(PaymentRequest.class)))
-                    .thenReturn(paymentResponse);
-
-            mockMvc.perform(post(URL)
+            mockMvc.perform(get(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(paymentRequest))
-            ).andExpect(status().isCreated());
-        }
-
-        @Test
-        @DisplayName("Incorrect data should throw 400")
-        @WithMockUser(roles = "USER")
-        void incorrectData_shouldThrow400() throws Exception {
-            PaymentRequest paymentRequest = new PaymentRequest();
-            paymentRequest.setBookingId(bookingId);
-            paymentRequest.setCurrency("WRONG");
-            paymentRequest.setPaymentMethod(PaymentMethod.DEBIT_CARD);
-
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(paymentRequest))
-            ).andExpect(status().isBadRequest());
-        }
-
-        @Test
-        @DisplayName("anonymous user should throw 403")
-        void anonymousUser_shouldThrow403() throws Exception {
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(new PaymentRequest()))
-            ).andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("Booking not found should throw 404")
-        @WithMockUser(roles = "USER")
-        void bookingNotFound_shouldThrow() throws Exception {
-            PaymentRequest paymentRequest = new PaymentRequest();
-            paymentRequest.setBookingId(bookingId);
-            paymentRequest.setPaymentMethod(PaymentMethod.DEBIT_CARD);
-            paymentRequest.setCurrency("USD");
-
-            when(paymentService.createPayment(paymentRequest))
-                    .thenThrow(EntityNotFoundException.class);
-
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(paymentRequest))
-            ).andExpect(status().isNotFound());
-        }
-    }
-
-    @Nested
-    @DisplayName("refunding payment (post /payments)")
-    class RefundPayment {
-        private final UUID paymentId = UUID.randomUUID();
-        private final String URL = "/api/payments/" + paymentId + "/refund";
-
-        @Test
-        @DisplayName("valid request should return 200 and paymentResponse")
-        @WithMockUser(roles = "USER")
-        void validRequest_shouldReturn200AndPaymentResponse() throws Exception {
-            RefundRequest refundRequest = new RefundRequest();
-            refundRequest.setReason("Refund testing");
-
-            when(paymentService.refundPayment(refundRequest))
-                    .thenReturn(new PaymentResponse());
-
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(refundRequest))
             ).andExpect(status().isOk());
-        }
-
-        @Test
-        @DisplayName("not your payment should return 403")
-        @WithMockUser(roles = "USER")
-        void notYourPayment_shouldThrowForbiddenUserException() throws Exception {
-            RefundRequest refundRequest = new RefundRequest();
-            refundRequest.setReason("Refund testing");
-
-            when(paymentService.refundPayment(any(RefundRequest.class)))
-                    .thenThrow(ForbiddenUserException.class);
-
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(refundRequest))
-            ).andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("refund status isn't equal completed should throw 400")
-        @WithMockUser(roles = "USER")
-        void wrongRefundStatus_shouldThrowRefundNotAllowedException() throws Exception {
-            RefundRequest refundRequest = new RefundRequest();
-            refundRequest.setReason("Refund testing");
-
-            when(paymentService.refundPayment(any(RefundRequest.class)))
-                    .thenThrow(RefundNotAllowedException.class);
-
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(refundRequest))
-            ).andExpect(status().isBadRequest());
         }
     }
 }

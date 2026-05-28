@@ -1,0 +1,100 @@
+INSERT INTO users (user_id, email, password, role, username)
+VALUES
+-- (HOST)
+('f1b1a111-1111-1111-1111-111111111111', 'host_john@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'john_host'),
+('f1b1a222-2222-2222-2222-222222222222', 'host_marta@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'marta_rent'),
+('f1b1a333-3333-3333-3333-333333333333', 'host_alex@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'alex_cozy'),
+('f1b1a444-4444-4444-4444-444444444444', 'host_elena@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'elena_apart'),
+('f1b1a555-5555-5555-5555-555555555555', 'host_pierre@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'pierre_paris'),
+('f1b1a666-6666-6666-6666-666666666666', 'host_yuki@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'yuki_tokyo'),
+('f1b1a777-7777-7777-7777-777777777777', 'host_sven@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'HOST', 'sven_nordic'),
+-- (USER)
+('faaa1111-bbbb-cccc-dddd-111111111111', 'user_alice@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'USER', 'alice_traveler'),
+('faaa2222-bbbb-cccc-dddd-222222222222', 'user_bob@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'USER', 'bob_backpacker'),
+('faaa3333-bbbb-cccc-dddd-333333333333', 'user_clara@example.com',
+ '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6', 'USER', 'clara_nomad');
+
+
+INSERT INTO location (location_id, address, city, country)
+VALUES ('c1111111-1111-1111-1111-111111111111', '123 Ocean Drive', 'Miami', 'USA'),
+       ('c2222222-2222-2222-2222-222222222222', '45 Baker Street', 'London', 'UK'),
+       ('c3333333-3333-3333-3333-333333333333', '12 Rue de Rivoli', 'Paris', 'France'),
+       ('c4444444-4444-4444-4444-444444444444', 'Shibuya 2-chome', 'Tokyo', 'Japan'),
+       ('c5555555-5555-5555-5555-555555555555', 'Karlavägen 45', 'Stockholm', 'Sweden'),
+       ('c6666666-6666-6666-6666-666666666666', 'Nevsky Prospekt 12', 'St. Petersburg', 'Russia'),
+       ('c7777777-7777-7777-7777-777777777777', 'Broadway 789', 'New York', 'USA');
+
+
+INSERT INTO listing (listing_id, created_at, description, price_per_night, average_rating, reviews_count, title,
+                     updated_at, location_id, user_id)
+VALUES ('d1111111-1111-1111-1111-111111111111', NOW(), 'Beautiful villa with pool', 250.00, 4.50, 2,
+        'Sunny Miami Villa', NOW(), 'c1111111-1111-1111-1111-111111111111', 'f1b1a111-1111-1111-1111-111111111111'),
+       ('d1111111-1111-1111-1111-222222222222', NOW(), 'Cozy loft near Times Square', 180.00, 0.00, 0,
+        'Manhattan Studio', NOW(), 'c7777777-7777-7777-7777-777777777777', 'f1b1a111-1111-1111-1111-111111111111'),
+       ('d2222222-2222-2222-2222-222222222222', NOW(), 'Classic British apartment', 120.00, 5.00, 1,
+        'London Flat near Big Ben', NOW(), 'c2222222-2222-2222-2222-222222222222',
+        'f1b1a222-2222-2222-2222-222222222222'),
+       ('d3333333-3333-3333-3333-333333333333', NOW(), 'Cozy place in historical center', 90.00, 4.00, 1,
+        'Spb Center Room', NOW(), 'c6666666-6666-6666-6666-666666666666', 'f1b1a333-3333-3333-3333-333333333333'),
+       ('d4444444-4444-4444-4444-444444444444', NOW(), 'Romantic penthouse view', 310.00, 0.00, 0,
+        'Eiffel Tower View Penthouse', NOW(), 'c3333333-3333-3333-3333-333333333333',
+        'f1b1a555-5555-5555-5555-555555555555'),
+       ('d5555555-5555-5555-5555-555555555555', NOW(), 'Minimalistic design apartment', 140.00, 0.00, 0,
+        'Modern Tokyo Capsule-style Flat', NOW(), 'c4444444-4444-4444-4444-444444444444',
+        'f1b1a666-6666-6666-6666-666666666666'),
+       ('d6666666-6666-6666-6666-666666666666', NOW(), 'Scandi style eco-house', 200.00, 0.00, 0, 'Stockholm Eco Cabin',
+        NOW(), 'c5555555-5555-5555-5555-555555555555', 'f1b1a777-7777-7777-7777-777777777777');
+
+
+INSERT INTO listing_image (listing_image_id, file_name, listing_id)
+VALUES (gen_random_uuid(), 'miami_pool.jpg', 'd1111111-1111-1111-1111-111111111111'),
+       (gen_random_uuid(), 'miami_bedroom.jpg', 'd1111111-1111-1111-1111-111111111111'),
+       (gen_random_uuid(), 'ny_loft.jpg', 'd1111111-1111-1111-1111-222222222222'),
+       (gen_random_uuid(), 'london_kitchen.jpg', 'd2222222-2222-2222-2222-222222222222'),
+       (gen_random_uuid(), 'paris_view.jpg', 'd4444444-4444-4444-4444-444444444444');
+
+
+INSERT INTO booking (booking_id, check_in_date, check_out_date, created_at, status, total_price, updated_at, listing_id,
+                     user_id)
+VALUES ('b1111111-1111-1111-1111-111111111111', '2026-06-01 14:00:00', '2026-06-05 12:00:00', NOW(), 'CONFIRMED',
+        1000.00, NOW(), 'd1111111-1111-1111-1111-111111111111', 'faaa1111-bbbb-cccc-dddd-111111111111'),
+       ('b1111111-1111-1111-1111-222222222222', '2026-07-10 14:00:00', '2026-07-15 12:00:00', NOW(), 'COMPLETED',
+        600.00, NOW(), 'd2222222-2222-2222-2222-222222222222', 'faaa1111-bbbb-cccc-dddd-111111111111'),
+       ('b2222222-2222-2222-2222-111111111111', '2026-06-10 14:00:00', '2026-06-15 12:00:00', NOW(), 'CONFIRMED',
+        1250.00, NOW(), 'd1111111-1111-1111-1111-111111111111', 'faaa2222-bbbb-cccc-dddd-222222222222'),
+       ('b2222222-2222-2222-2222-222222222222', '2026-08-01 14:00:00', '2026-08-03 12:00:00', NOW(), 'PENDING', 180.00,
+        NOW(), 'd3333333-3333-3333-3333-333333333333', 'faaa2222-bbbb-cccc-dddd-222222222222'),
+       ('b3333333-3333-3333-3333-111111111111', '2026-09-01 14:00:00', '2026-09-10 12:00:00', NOW(), 'CONFIRMED',
+        3100.00, NOW(), 'd4444444-4444-4444-4444-444444444444', 'faaa3333-bbbb-cccc-dddd-333333333333');
+
+
+INSERT INTO payment (payment_id, amount, currency, status, method, stripe_id, created_at, updated_at, booking_id,
+                     user_id)
+VALUES (gen_random_uuid(), 1000.00, 'USD', 'COMPLETED', 'CREDIT_CARD', 'ch_192831293', NOW(), NOW(),
+        'b1111111-1111-1111-1111-111111111111', 'faaa1111-bbbb-cccc-dddd-111111111111'),
+       (gen_random_uuid(), 600.00, 'GBP', 'COMPLETED', 'PAYPAL', 'ch_583920192', NOW(), NOW(),
+        'b1111111-1111-1111-1111-222222222222', 'faaa1111-bbbb-cccc-dddd-111111111111'),
+       (gen_random_uuid(), 1250.00, 'USD', 'COMPLETED', 'DEBIT_CARD', 'ch_472019283', NOW(), NOW(),
+        'b2222222-2222-2222-2222-111111111111', 'faaa2222-bbbb-cccc-dddd-222222222222'),
+       (gen_random_uuid(), 180.00, 'RUB', 'PENDING', 'CREDIT_CARD', null, NOW(), NOW(),
+        'b2222222-2222-2222-2222-222222222222', 'faaa2222-bbbb-cccc-dddd-222222222222');
+
+
+INSERT INTO reviews (review_id, comment, created_at, rating, listing_listing_id, user_user_id)
+VALUES (gen_random_uuid(), 'Amazing house and great pool!', NOW(), 5.00, 'd1111111-1111-1111-1111-111111111111',
+        'faaa1111-bbbb-cccc-dddd-111111111111'),
+       (gen_random_uuid(), 'Good location but a bit noisy', NOW(), 4.00, 'd1111111-1111-1111-1111-111111111111',
+        'faaa2222-bbbb-cccc-dddd-222222222222'),
+       (gen_random_uuid(), 'Splendid view, host is very polite.', NOW(), 5.00, 'd2222222-2222-2222-2222-222222222222',
+        'faaa1111-bbbb-cccc-dddd-111111111111'),
+       (gen_random_uuid(), 'The room was cold.', NOW(), 4.00, 'd3333333-3333-3333-3333-333333333333',
+        'faaa2222-bbbb-cccc-dddd-222222222222');

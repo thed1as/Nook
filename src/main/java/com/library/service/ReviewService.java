@@ -6,6 +6,7 @@ import com.library.dto.review.UpdateReviewRequest;
 import com.library.entity.Listing;
 import com.library.entity.Review;
 import com.library.entity.User;
+import com.library.enums.Status;
 import com.library.mapper.ReviewMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
@@ -33,7 +34,7 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getAllReviewsOfListing(UUID listingId, Pageable pageable) {
-        listingService.getListingOrThrow(listingId);
+        listingRepository.findById(listingId).orElseThrow(() -> new EntityNotFoundException("listing not found"));
         return reviewRepository
                 .findAllByListing_ListingIdOrderByCreatedAtDesc(listingId, pageable)
                 .map(reviewMapper::toReviewResponse);
@@ -47,7 +48,7 @@ public class ReviewService {
             throw new IllegalStateException("You cannot add reviews to your listing");
         }
 
-        if(!bookingRepository.existsBookingByListing_ListingIdAndUser_UserId(listingId, user.getUserId())) {
+        if(!bookingRepository.existsByListing_ListingIdAndUser_UserIdAndStatus(listingId, user.getUserId(), Status.COMPLETED)) {
             throw new IllegalStateException("You must have a completed booking to leave a review");
         }
 
@@ -87,7 +88,7 @@ public class ReviewService {
         if(!listingRepository.existsById(listingId)) {
             throw new EntityNotFoundException("Listing not exists");
         }
-        Review review = reviewRepository.findById(reviewId).orElseThrow(EntityNotFoundException::new);
+        Review review = reviewRepository.findByDetailedReviewId(reviewId).orElseThrow(EntityNotFoundException::new);
         if(!userService.getCurrentUserEmail().equals(review.getUser().getEmail())) {
             throw new IllegalStateException("Not your review!");
         }
@@ -111,11 +112,11 @@ public class ReviewService {
 
     @Transactional
     public void deleteReview(UUID reviewId, UUID listingId) {
-        Review review = reviewRepository.findById(reviewId).orElseThrow(EntityNotFoundException::new);
+        Review review = reviewRepository.findByDetailedReviewId(reviewId).orElseThrow(EntityNotFoundException::new);
         if(!review.getUser().getEmail().equals(userService.getCurrentUserEmail())) {
             throw new IllegalStateException("Not your review!");
         }
-        Listing listing = listingService.getListingOrThrow(listingId);
+        Listing listing = review.getListing();
         listing.removeReview(review);
 
         BigDecimal newAvg;
@@ -135,7 +136,7 @@ public class ReviewService {
         listing.setAverageRating(newAvg);
         listing.setReviewsCount(oldCount - 1);
         listingRepository.save(listing);
-        reviewRepository.delete(review);
+        reviewRepository.deleteByDetailedId(review.getReviewId());
     }
 
 }

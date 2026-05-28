@@ -1,7 +1,10 @@
 package com.library.repository;
 
 import com.library.entity.Booking;
+import com.library.enums.Status;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,15 +22,24 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             "AND b.checkOutDate > :newCheckIn")
     boolean isListOccupied(@Param("listingId") UUID listingParam, @Param("newCheckIn") LocalDateTime checkInDate, @Param("newCheckOut") LocalDateTime checkOutDate);
 
-    @Query("SELECT b FROM Booking b WHERE b.user.userId = :userId AND b.listing.listingId = :listingId")
-    Optional<Booking> findByListingIdAndUserId(UUID listingId, UUID userId);
 
-    @Query("SELECT b FROM Booking b WHERE b.user.userId = :userId")
-    List<Booking> findUserBookingsById(UUID userId);
-
+    @EntityGraph(attributePaths = {
+            "user",
+            "listing",
+            "listing.location",
+            "listing.user",
+            "payment"
+    })
     @Query("SELECT b FROM Booking b WHERE b.user.email = :email")
     List<Booking> findUserBookingsByEmail(String email);
 
+    @EntityGraph(attributePaths = {
+            "user",
+            "payment",
+            "listing",
+            "listing.location",
+            "listing.user"
+    })
     @Query("SELECT b FROM Booking b WHERE b.listing.listingId = :listingId")
     List<Booking> findListingBookingsById(UUID listingId);
 
@@ -39,5 +51,36 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     """)
     boolean existsActiveBookingsForListing(UUID listingId);
 
-    boolean existsBookingByListing_ListingIdAndUser_UserId(UUID listingListingId, UUID userUserId);
+
+    boolean existsByListing_ListingIdAndUser_UserIdAndStatus(UUID listingListingId, UUID userUserId, Status status);
+
+    @Modifying
+    @Query("""
+        UPDATE Booking b SET b.status = :cancelledStatus
+        WHERE b.status = :pendingStatus AND b.createdAt < :threshold
+    """)
+    int cancelExpiredBookings(
+            @Param("cancelledStatus") Status cancelledStatus,
+            @Param("pendingStatus") Status pendingStatus,
+            @Param("threshold") LocalDateTime threshold
+    );
+
+    @EntityGraph(attributePaths = {
+            "listing",
+            "listing.location",
+            "listing.image",
+            "listing.review",
+            "user"
+    })
+    @Query("SELECT b FROM Booking b WHERE b.bookingId = :bookingId")
+    Optional<Booking> findByDetailedId(@Param("bookingId") UUID bookingId);
+
+    @Query("SELECT b FROM Booking b WHERE b.bookingId = :bookingId")
+    @EntityGraph(attributePaths = {
+            "user",
+            "listing",
+            "listing.user",
+            "payment"
+    })
+    Optional<Booking> findDetailedForCancelById(@Param("bookingId") UUID bookingId);
 }

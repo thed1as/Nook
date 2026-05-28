@@ -12,6 +12,9 @@ import com.library.entity.Payment;
 import com.library.entity.User;
 import com.library.enums.PaymentStatus;
 import com.library.enums.Status;
+import com.library.event.entities.BookingCancelEvent;
+import com.library.event.entities.BookingConfirmedEvent;
+import com.library.event.entities.PaymentCompletedEvent;
 import com.library.mapper.PaymentMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.PaymentRepository;
@@ -19,6 +22,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,81 +41,40 @@ public class PaymentService {
     private final BookingRepository bookingRepository;
     private final StripeService stripeService;
     private final PaymentMapper paymentMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.booking.cancellation-window-days}")
     private int cancellationWindowDays;
 
     @Transactional
-    public PaymentResponse createPayment(PaymentRequest paymentRequest) {
-        User user = userService.getUserByEmail(userService.getCurrentUserEmail());
-        Booking booking = bookingRepository.findById(paymentRequest.getBookingId())
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-
-        if(!booking.getUser().equals(user)) {
-            throw new IllegalStateException("Not your bookings!");
-        }
-
-        if(!booking.getStatus().equals(Status.PENDING)) {
-            throw new IllegalStateException("Booking status is not PENDING!");
-        }
-
-        if(paymentRepository.existsPaymentByBooking_BookingIdAndStatus(
-                booking.getBookingId(), PaymentStatus.COMPLETED
-        )) {
-            throw new PaymentAlreadyExistsException("Payment already exists");
-        }
-
+    public String initializePayment(Booking booking, PaymentRequest paymentRequest) {
+        String stripeId = stripeService.createPayment(booking.getTotalPrice(), paymentRequest.getCurrency());
         Payment payment = new Payment();
-
-        String stripeId = stripeService.createPayment(
-                booking.getTotalPrice(),
-                paymentRequest.getCurrency()
-        );
-
-        payment.setUser(user);
+        payment.setUser(booking.getUser());
         payment.setBooking(booking);
         payment.setAmount(booking.getTotalPrice());
-        payment.setCurrency(paymentRequest.getCurrency());
-        payment.setStatus(PaymentStatus.PENDING);
+        payment.setCurrency(paymentRequest.getCurrency().toUpperCase());
         log.debug("paymentMethod: {}", paymentRequest.getPaymentMethod());
+        payment.setStatus(PaymentStatus.PENDING);
         payment.setMethod(paymentRequest.getPaymentMethod());
         payment.setStripeId(stripeId);
+        paymentRepository.save(payment);
 
-        return paymentMapper.toPaymentResponse(paymentRepository.save(payment));
+        return stripeId;
     }
 
     @Transactional
-    public PaymentResponse refundPayment(RefundRequest refundRequest) {
-        User user = userService.getUserByEmail(userService.getCurrentUserEmail());
-        Payment payment = paymentRepository.findById(refundRequest.getPaymentId())
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
-
-        Booking booking = payment.getBooking();
-
-        if(!payment.getUser().equals(user)) {
-            throw new ForbiddenUserException("Not your payment or booking");
-        }
-
-        if(!payment.getStatus().equals(PaymentStatus.COMPLETED)) {
-            throw new RefundNotAllowedException("Your payment isn't completed");
-        }
-
-
-        if(!booking.getStatus().equals(Status.CONFIRMED)) {
-            throw new RefundNotAllowedException("Booking cancelled or was completed");
-        }
-
-        if((LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) ||
-                LocalDateTime.now().isAfter(booking.getCreatedAt().plusDays(1)))) {
-            throw new RefundNotAllowedException("Too late to refund payment and cancel booking");
-        }
-
+    void processRefundForCancellationBooking(Payment payment) {
         stripeService.refundPayment(payment.getStripeId());
-        payment.setStatus(PaymentStatus.REFUNDED);
-        booking.setStatus(Status.CANCELLED);
 
-        bookingRepository.save(booking);
-        return paymentMapper.toPaymentResponse(paymentRepository.save(payment));
+        payment.setStatus(PaymentStatus.CANCELLED);
+        paymentRepository.save(payment);
+
+        eventPublisher.publishEvent(new BookingCancelEvent(
+                payment.getBooking().getBookingId(),
+                payment.getUser().getEmail(),
+                payment.getBooking().getListing().getTitle()
+        ));
     }
 
     @Transactional
@@ -130,6 +93,23 @@ public class PaymentService {
                             booking.setStatus(Status.CONFIRMED);
                             bookingRepository.save(booking);
 
+
+                            eventPublisher.publishEvent(new PaymentCompletedEvent(
+                                    payment.getPaymentId(),
+                                    payment.getUser().getEmail(),
+                                    booking.getListing().getTitle(),
+                                    payment.getAmount(),
+                                    payment.getCurrency()
+                            ));
+
+                            eventPublisher.publishEvent(new BookingConfirmedEvent(
+                                    booking.getBookingId(),
+                                    booking.getUser().getEmail(),
+                                    booking.getListing().getTitle(),
+                                    booking.getCheckInDate(),
+                                    booking.getCheckOutDate(),
+                                    booking.getTotalPrice()
+                            ));
                             log.info("Payment completed: {}", stripeId);
                         },
                         () -> log.warn("Payment not found for stripeId: {}", stripeId)
@@ -152,11 +132,11 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Page<PaymentResponse> getPaymentsByBookingId(UUID bookingId, Pageable pageable) {
 
-        UUID userId = userService.getUserByEmail(userService.getCurrentUserEmail()).getUserId();
+        String userEmail = userService.getCurrentUserEmail();
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        if(!booking.getUser().getUserId().equals(userId) && !booking.getListing().getUser().getUserId().equals(userId)) {
-            throw new IllegalStateException("It's not your booking. Access denied.");
+        if(!booking.getUser().getEmail().equals(userEmail) && !booking.getListing().getUser().getEmail().equals(userEmail)) {
+            throw new ForbiddenUserException("It's not your booking. Access denied.");
         }
 
         return paymentRepository.findByBooking_BookingId(bookingId, pageable)
@@ -165,8 +145,8 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public Page<PaymentResponse> getUserPayments(Pageable pageable) {
-        UUID userId = userService.getUserByEmail(userService.getCurrentUserEmail()).getUserId();
-        return paymentRepository.findByUser_UserId(userId, pageable)
+        String email = userService.getCurrentUserEmail();
+        return paymentRepository.findByUser_Email(email, pageable)
                 .map(paymentMapper::toPaymentResponse);
     }
 }

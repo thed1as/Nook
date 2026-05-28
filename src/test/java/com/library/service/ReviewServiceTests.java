@@ -6,6 +6,7 @@ import com.library.dto.review.UpdateReviewRequest;
 import com.library.entity.Listing;
 import com.library.entity.Review;
 import com.library.entity.User;
+import com.library.enums.Status;
 import com.library.mapper.ReviewMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
@@ -75,7 +76,7 @@ public class ReviewServiceTests {
             );
             Page<Review> page = new PageImpl<>(reviews, pageable, reviews.size());
 
-            when(listingService.getListingOrThrow(listingId)).thenReturn(new Listing());
+            when(listingRepository.findById(listingId)).thenReturn(Optional.of(new Listing()));
             when(reviewRepository.findAllByListing_ListingIdOrderByCreatedAtDesc(listingId, pageable))
                     .thenReturn(page);
 
@@ -99,12 +100,12 @@ public class ReviewServiceTests {
         void listingNotFound_shouldThrowEntityNotFoundException() {
             UUID listingId = UUID.randomUUID();
 
-            when(listingService.getListingOrThrow(listingId))
-                    .thenThrow(new EntityNotFoundException("Listing not found!"));
+            when(listingRepository.findById(listingId))
+                    .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> reviewService.getAllReviewsOfListing(listingId, PageRequest.of(0, 1)))
                     .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessage("Listing not found!");
+                    .hasMessage("listing not found");
         }
     }
 
@@ -146,7 +147,7 @@ public class ReviewServiceTests {
             when(userService.getUserByEmail(any())).thenReturn(user);
             when(listingService.getListingOrThrow(listingId))
                     .thenReturn(listing);
-            when(bookingRepository.existsBookingByListing_ListingIdAndUser_UserId(listingId, userId))
+            when(bookingRepository.existsByListing_ListingIdAndUser_UserIdAndStatus(listingId, userId, Status.COMPLETED))
                     .thenReturn(true);
             when(reviewRepository.countAllByListing_ListingIdAndUser_UserId(listingId, userId))
                     .thenReturn(0L);
@@ -270,7 +271,7 @@ public class ReviewServiceTests {
             when(userService.getUserByEmail(any(String.class)))
                     .thenReturn(user);
             when(listingService.getListingOrThrow(listingId)).thenReturn(listing);
-            when(bookingRepository.existsBookingByListing_ListingIdAndUser_UserId(listingId, user.getUserId()))
+            when(bookingRepository.existsByListing_ListingIdAndUser_UserIdAndStatus(listingId, user.getUserId(), Status.COMPLETED))
                     .thenReturn(true);
             when(reviewRepository.countAllByListing_ListingIdAndUser_UserId(listingId, user.getUserId()))
                     .thenReturn(1L);

@@ -16,7 +16,8 @@ import java.util.UUID;
 @Entity @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "booking")
+@Table(name = "booking", indexes =
+        @Index(name = "idx_booking_status", columnList = "status, createdAt"))
 public class Booking {
 
     @Id
@@ -40,11 +41,11 @@ public class Booking {
 
 
 //    Connections
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_id")
     private Listing listing;
 

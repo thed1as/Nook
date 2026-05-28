@@ -12,13 +12,19 @@ import java.util.UUID;
 
 public class ListingSpecification {
     public static Specification<Listing> build(ListingFilterRequest filter) {
-        return Specification.allOf(
-                priceGreaterThanOrEqualTo(filter.getMinPrice()),
-                priceLessThanOrEqualTo(filter.getMaxPrice()),
-                hasCountry(filter.getCountry()),
-                hasCity(filter.getCity()),
-                isAvailableBetween(filter.getCheckIn(), filter.getCheckOut())
-        );
+        return (root, query, cb) -> {
+            if(query.getResultType() != Long.class) {
+                query.distinct(true);
+            }
+
+            return Specification.allOf(
+                    priceGreaterThanOrEqualTo(filter.getMinPrice()),
+                    priceLessThanOrEqualTo(filter.getMaxPrice()),
+                    hasCountry(filter.getCountry()),
+                    hasCity(filter.getCity()),
+                    isAvailableBetween(filter.getCheckIn(), filter.getCheckOut())
+            ).toPredicate(root, query, cb);
+        };
     }
 
     private static Specification<Listing> priceGreaterThanOrEqualTo(BigDecimal minPrice) {

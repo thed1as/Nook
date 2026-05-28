@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.dto.exception.customException.forbiden.ForbiddenUserException;
 import com.library.dto.exception.customException.paymentExceptions.PaymentAlreadyExistsException;
 import com.library.dto.exception.customException.paymentExceptions.PaymentFailedException;
 import com.library.dto.exception.customException.paymentExceptions.RefundNotAllowedException;
@@ -7,6 +8,7 @@ import com.library.dto.payment.PaymentRequest;
 import com.library.dto.payment.PaymentResponse;
 import com.library.dto.payment.RefundRequest;
 import com.library.entity.Booking;
+import com.library.entity.Listing;
 import com.library.entity.Payment;
 import com.library.entity.User;
 import com.library.enums.PaymentMethod;
@@ -23,14 +25,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.parameters.P;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -53,271 +63,97 @@ public class PaymentServiceTests {
     private StripeService stripeService;
 
     @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
+    @Mock
     private PaymentMapper paymentMapper;
 
     @Nested
-    @DisplayName("Create payment")
-    class CreatePayment {
+    @DisplayName("get tests")
+    class getPayment {
         @Test
-        @DisplayName("Valid request successful payment")
-        void validRequest_ReturnsPaymentResponse() {
-            String mockStripePaymentIntentId = "pi_test_" + UUID.randomUUID().toString().substring(0, 8);
-            PaymentRequest paymentRequest = new PaymentRequest();
+        @DisplayName("get payment by booking id should return page of paymentResponse")
+        void validRequest_shouldReturnPageOfPaymentResponse() {
             UUID bookingId = UUID.randomUUID();
-            String currency = "USD";
+            Pageable pageable = PageRequest.of(0, 10);
 
-            paymentRequest.setBookingId(bookingId);
-            paymentRequest.setCurrency(currency);
-            paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
-
+            String guestEmail = "guest@gmail.com";
+            String hostEmail = "host@gmail.com";
             User user = new User();
-            String testEmail = "test@gmail.com";
-            user.setEmail(testEmail);
-
-            Booking booking = new Booking();
-            booking.setBookingId(bookingId);
-            booking.setStatus(Status.PENDING);
-            booking.setUser(user);
-            booking.setTotalPrice(BigDecimal.valueOf(500));
-
-            PaymentResponse paymentResponse = new PaymentResponse();
-            paymentResponse.setPaymentId(UUID.randomUUID());
-            paymentResponse.setCurrency(currency);
-            paymentResponse.setAmount(booking.getTotalPrice());
-            paymentResponse.setStatus(PaymentStatus.PENDING);
-            paymentResponse.setCreatedAt(LocalDateTime.now());
-            paymentResponse.setBookingId(bookingId);
-
-            when(userService.getCurrentUserEmail()).thenReturn(testEmail);
-            when(userService.getUserByEmail(testEmail))
-                    .thenReturn(user);
-
-            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-
-            when(paymentRepository.existsPaymentByBooking_BookingIdAndStatus(
-                    booking.getBookingId(), PaymentStatus.COMPLETED
-            )).thenReturn(false);
-
-            when(stripeService.createPayment(booking.getTotalPrice(), paymentRequest.getCurrency()))
-                    .thenReturn(mockStripePaymentIntentId);
-
-            Payment mockPayment = new Payment();
-
-            when(paymentRepository.save(any(Payment.class)))
-                    .thenReturn(mockPayment);
-
-            when(paymentMapper.toPaymentResponse(any(Payment.class)))
-                    .thenReturn(paymentResponse);
-
-            PaymentResponse result = paymentService.createPayment(paymentRequest);
-
-            assertThat(result).isNotNull();
-            assertThat(result.getBookingId()).isEqualTo(bookingId);
-
-            verify(stripeService, times(1)).createPayment(booking.getTotalPrice(), paymentRequest.getCurrency());
-            verify(paymentRepository, times(1)).save(any(Payment.class));
-        }
-
-        @Test
-        @DisplayName("Booking not found")
-        void bookingNotFound_ThrowsEntityNotFoundException() {
-            PaymentRequest paymentRequest = new PaymentRequest();
-            paymentRequest.setBookingId(UUID.randomUUID());
-            paymentRequest.setCurrency("USD");
-            paymentRequest.setPaymentMethod(PaymentMethod.DEBIT_CARD);
-
-
-            when(userService.getCurrentUserEmail()).thenReturn("test@gmail.com");
-            when(userService.getUserByEmail("test@gmail.com")).thenReturn(new User());
-            when(bookingRepository.findById(paymentRequest.getBookingId())).thenReturn(Optional.empty());
-            assertThatThrownBy(() -> paymentService.createPayment(paymentRequest))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessage("Booking not found");
-
-            verify(paymentRepository, never()).save(any(Payment.class));
-        }
-
-        @Test
-        @DisplayName("It's not your booking should throw IllegalStateException")
-        void notYourBooking_ThrowsIllegalStateException() {
-            PaymentRequest paymentRequest = new PaymentRequest();
-            paymentRequest.setBookingId(UUID.randomUUID());
-            paymentRequest.setPaymentMethod(PaymentMethod.PAYPAL);
-            paymentRequest.setCurrency("USD");
-
-            String testEmail = "test@gmail.com";
-            User user = new User();
-            user.setEmail(testEmail);
+            user.setEmail(guestEmail);
 
             User user2 = new User();
+            user2.setEmail(hostEmail);
 
             Booking booking = new Booking();
-            booking.setUser(user2);
+            booking.setUser(user);
 
-            when(userService.getCurrentUserEmail()).thenReturn(testEmail);
-            when(userService.getUserByEmail(testEmail)).thenReturn(user);
-            when(bookingRepository.findById(paymentRequest.getBookingId()))
-                    .thenReturn(Optional.of(booking));
+            Listing listing = new Listing();
+            listing.setUser(user2);
 
-            assertThatThrownBy(() -> paymentService.createPayment(paymentRequest))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Not your bookings!");
+            Payment p1 = new Payment();
+            Payment p2 = new Payment();
 
-            verify(paymentRepository, never()).save(any(Payment.class));
+            PaymentResponse pr1 = new PaymentResponse();
+            PaymentResponse pr2 = new PaymentResponse();
+
+            List<Payment> prl = List.of(p1, p2);
+
+            Page<Payment> paymentPage = new PageImpl<>(prl);
+
+            when(userService.getCurrentUserEmail()).thenReturn(guestEmail);
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+            when(paymentRepository.findByBooking_BookingId(bookingId, pageable)).thenReturn(paymentPage);
+            when(paymentMapper.toPaymentResponse(p1)).thenReturn(pr1);
+            when(paymentMapper.toPaymentResponse(p2)).thenReturn(pr2);
+
+            Page<PaymentResponse> result = paymentService.getPaymentsByBookingId(bookingId, pageable);
+
+            assertThat(result).hasSize(2);
+            assertEquals(pr1, result.getContent().get(0));
+            assertEquals(pr2, result.getContent().get(1));
         }
-
         @Test
-        @DisplayName("Payment already exists")
-        void paymentExists_shouldThrowPaymentAlreadyExists() {
+        @DisplayName("booking not found should throw entitynotfoundexception")
+        void bookingNotFound_shouldThrowEntityNotFoundException() {
             UUID bookingId = UUID.randomUUID();
-            PaymentRequest paymentRequest = new PaymentRequest();
-            paymentRequest.setBookingId(bookingId);
-            paymentRequest.setPaymentMethod(PaymentMethod.PAYPAL);
-            paymentRequest.setCurrency("USD");
+            Pageable pageable = PageRequest.of(0, 10);
 
-            String testEmail = "test@gmail.com";
-            User user = new User();
-            user.setEmail(testEmail);
-
-            Booking booking = new Booking();
-            booking.setBookingId(bookingId);
-            booking.setStatus(Status.PENDING);
-            booking.setUser(user);
-
-            when(userService.getCurrentUserEmail()).thenReturn(testEmail);
-            when(userService.getUserByEmail(testEmail)).thenReturn(user);
-            when(bookingRepository.findById(paymentRequest.getBookingId()))
-                    .thenReturn(Optional.of(booking));
-
-            when(paymentRepository.existsPaymentByBooking_BookingIdAndStatus
-                    (booking.getBookingId(), PaymentStatus.COMPLETED))
-                    .thenReturn(true);
-
-            assertThatThrownBy(() -> paymentService.createPayment(paymentRequest))
-                    .isInstanceOf(PaymentAlreadyExistsException.class)
-                    .hasMessage("Payment already exists");
-
-            verify(paymentRepository, never()).save(any(Payment.class));
+            String guestEmail = "guest@gmail.com";
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
+            assertThatThrownBy(() -> paymentService.getPaymentsByBookingId(bookingId, pageable))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage("Booking not found");
         }
 
         @Test
-        @DisplayName("Stripe service failed")
-        void stripeFailed_shouldThrowPaymentFailedException() {
-            PaymentRequest paymentRequest = new PaymentRequest();
+        @DisplayName("forbidden user should throw forbiddenuserexxception")
+        void forbiddenUser_shouldThrowForbiddenUserException() {
             UUID bookingId = UUID.randomUUID();
-            paymentRequest.setBookingId(bookingId);
-            paymentRequest.setPaymentMethod(PaymentMethod.PAYPAL);
-            paymentRequest.setCurrency("USD");
+            Pageable pageable = PageRequest.of(0, 10);
 
-            String testEmail = "test@gmail.com";
-            User user = new User();
-            user.setEmail(testEmail);
+            String guestEmail = "guest@gmail.com";
+            String forbiddenEmail = "forbidden@gmail.com";
+            String ownerEmail = "owner@gmail.com";
 
-            Booking booking = new Booking();
-            booking.setBookingId(bookingId);
-            booking.setUser(user);
-            booking.setStatus(Status.PENDING);
-            booking.setTotalPrice(BigDecimal.valueOf(500));
 
-            when(userService.getCurrentUserEmail()).thenReturn(testEmail);
-            when(userService.getUserByEmail(testEmail)).thenReturn(user);
-            when(bookingRepository.findById(paymentRequest.getBookingId()))
-                    .thenReturn(Optional.of(booking));
+            User guest = new User(); guest.setEmail(guestEmail);
+            User host = new User(); host.setEmail(ownerEmail);
 
-            when(paymentRepository.existsPaymentByBooking_BookingIdAndStatus(
-                    booking.getBookingId(), PaymentStatus.COMPLETED
-            )).thenReturn(false);
-            when(stripeService.createPayment(booking.getTotalPrice(), paymentRequest.getCurrency()))
-                    .thenThrow(PaymentFailedException.class);
-
-            assertThatThrownBy(() -> paymentService.createPayment(paymentRequest))
-                    .isInstanceOf(PaymentFailedException.class);
-
-            verify(paymentRepository, never()).save(any(Payment.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("Refund payment")
-    class RefundPayment {
-        @Test
-        @DisplayName("valid request should Refund the payment successfully and return paymentResponse")
-        void successful_shouldReturnPaymentResponse() {
-            UUID paymentId = UUID.randomUUID();
-            RefundRequest refundRequest = new RefundRequest();
-            refundRequest.setPaymentId(paymentId);
-            refundRequest.setReason("Refund testing");
-
-            String testEmail = "test@gmail.com";
-            User user = new User();
-            user.setEmail(testEmail);
+            Listing listing = new Listing();
+            listing.setUser(host);
 
             Booking booking = new Booking();
-            booking.setStatus(Status.CONFIRMED);
-            booking.setCheckInDate(LocalDateTime.now().plusDays(4));
-            booking.setCreatedAt(LocalDateTime.now().plusHours(10));
+            booking.setUser(new User());
+            booking.setUser(guest);
+            booking.setListing(listing);
 
-            Payment payment = new Payment();
-            payment.setStatus(PaymentStatus.COMPLETED);
+            when(userService.getCurrentUserEmail()).thenReturn(forbiddenEmail);
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
 
-
-            payment.setUser(user);
-            booking.setUser(user);
-            payment.setBooking(booking);
-
-            PaymentResponse paymentResponse = new PaymentResponse();
-            paymentResponse.setPaymentId(paymentId);
-            paymentResponse.setStatus(PaymentStatus.REFUNDED);
-
-            when(userService.getCurrentUserEmail()).thenReturn(testEmail);
-            when(userService.getUserByEmail(testEmail)).thenReturn(user);
-            when(paymentRepository.findById(paymentId))
-                    .thenReturn(Optional.of(payment));
-
-            when(paymentRepository.save(payment)).thenReturn(payment);
-            when(paymentMapper.toPaymentResponse(any(Payment.class)))
-                    .thenReturn(paymentResponse);
-
-            PaymentResponse result = paymentService.refundPayment(refundRequest);
-
-            assertThat(result).isNotNull();
-            assertThat(booking.getStatus()).isEqualTo(Status.CANCELLED);
-            assertThat(result.getPaymentId()).isEqualTo(paymentId);
-            assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
-
-            verify(bookingRepository, times(1)).save(any(Booking.class));
-            verify(paymentRepository, times(1)).save(any(Payment.class));
-        }
-
-        @Test
-        @DisplayName("Payment not completed should throw new RefundNotAllowedException")
-        void paymentNotCompleted_shouldThrowRefundNotAllowedException() {
-            UUID paymentId = UUID.randomUUID();
-
-            RefundRequest refundRequest = new RefundRequest();
-            refundRequest.setPaymentId(paymentId);
-            refundRequest.setReason("Refund testing");
-
-            String testEmail = "test@gmail.com";
-            User user = new User();
-            user.setEmail(testEmail);
-
-            Payment payment = new Payment();
-            payment.setPaymentId(paymentId);
-            payment.setStatus(PaymentStatus.FAILED);
-            payment.setUser(user);
-
-            when(userService.getCurrentUserEmail())
-                    .thenReturn(testEmail);
-            when(userService.getUserByEmail(testEmail)).thenReturn(user);
-            when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
-
-            assertThatThrownBy(() -> paymentService.refundPayment(refundRequest))
-                    .isInstanceOf(RefundNotAllowedException.class)
-                    .hasMessage("Your payment isn't completed");
-
-            verify(paymentRepository, never()).save(any(Payment.class));
-            verify(bookingRepository, never()).save(any(Booking.class));
+            assertThatThrownBy(() -> paymentService.getPaymentsByBookingId(bookingId, pageable))
+                    .isInstanceOf(ForbiddenUserException.class)
+                    .hasMessage("It's not your booking. Access denied.");
         }
     }
 }

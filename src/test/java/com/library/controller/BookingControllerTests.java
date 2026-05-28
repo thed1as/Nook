@@ -3,6 +3,9 @@ package com.library.controller;
 import com.library.config.SecurityConfig;
 import com.library.dto.booking.BookingRequest;
 import com.library.dto.booking.BookingResponse;
+import com.library.dto.checkout.BookingCheckoutRequest;
+import com.library.dto.payment.PaymentRequest;
+import com.library.enums.PaymentMethod;
 import com.library.enums.Status;
 import com.library.service.BookingService;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,6 +19,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -46,13 +50,21 @@ public class BookingControllerTests extends AbstractControllerTest {
         void validRequest_ShouldCreateBooking() throws Exception {
             BookingRequest bookingRequest = new BookingRequest();
             bookingRequest.setListingId(UUID.randomUUID());
-            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(1));
-            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(5));
+            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(1).with(LocalTime.NOON));
+            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(5).with(LocalTime.NOON));
+
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+            paymentRequest.setCurrency("USD");
+
+            BookingCheckoutRequest bookingCheckoutRequest = new BookingCheckoutRequest();
+            bookingCheckoutRequest.setBookingRequest(bookingRequest);
+            bookingCheckoutRequest.setPaymentRequest(paymentRequest);
 
             mockMvc.perform(post(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(bookingRequest))
+                    .content(objectMapper.writeValueAsString(bookingCheckoutRequest))
             ).andExpect(status().isCreated());
         }
 
@@ -62,29 +74,44 @@ public class BookingControllerTests extends AbstractControllerTest {
         void incorrectListingIdRequest_ShouldReturn400() throws Exception {
             BookingRequest bookingRequest = new BookingRequest();
             bookingRequest.setListingId(null);
-            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(1));
-            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(5));
+            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(1).with(LocalTime.NOON));
+            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(5).with(LocalTime.NOON));
+
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+            paymentRequest.setCurrency("USD");
+
+            BookingCheckoutRequest bookingCheckoutRequest = new BookingCheckoutRequest();
+            bookingCheckoutRequest.setBookingRequest(bookingRequest);
+            bookingCheckoutRequest.setPaymentRequest(paymentRequest);
 
             mockMvc.perform(post(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(bookingRequest))
+                    .content(objectMapper.writeValueAsString(bookingCheckoutRequest))
             ).andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("Return 400, if date field in past (valid)")
+        @DisplayName("Return 400, if ID field is empty (valid)")
         @WithMockUser(roles = "USER")
-        void incorrectListingDateRequest_ShouldReturn400() throws Exception {
+        void blankPaymentRequestCurrency_ShouldReturn400() throws Exception {
             BookingRequest bookingRequest = new BookingRequest();
             bookingRequest.setListingId(UUID.randomUUID());
-            bookingRequest.setCheckInDate(LocalDateTime.now().minusDays(1));
-            bookingRequest.setCheckInDate(LocalDateTime.now().minusDays(5));
+            bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(1).with(LocalTime.NOON));
+            bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(5).with(LocalTime.NOON));
+
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+
+            BookingCheckoutRequest bookingCheckoutRequest = new BookingCheckoutRequest();
+            bookingCheckoutRequest.setBookingRequest(bookingRequest);
+            bookingCheckoutRequest.setPaymentRequest(paymentRequest);
 
             mockMvc.perform(post(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(bookingRequest))
+                    .content(objectMapper.writeValueAsString(bookingCheckoutRequest))
             ).andExpect(status().isBadRequest());
         }
 
@@ -97,13 +124,21 @@ public class BookingControllerTests extends AbstractControllerTest {
             bookingRequest.setCheckInDate(LocalDateTime.now().plusDays(10));
             bookingRequest.setCheckOutDate(LocalDateTime.now().plusDays(5));
 
-            when(bookingService.createBooking(any(BookingRequest.class)))
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+            paymentRequest.setCurrency("USD");
+
+            BookingCheckoutRequest bookingCheckoutRequest = new BookingCheckoutRequest();
+            bookingCheckoutRequest.setBookingRequest(bookingRequest);
+            bookingCheckoutRequest.setPaymentRequest(paymentRequest);
+
+            when(bookingService.createBooking(any(BookingCheckoutRequest.class)))
                     .thenThrow(new IllegalStateException("Invalid date range"));
 
             mockMvc.perform(post(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(bookingRequest))
+                    .content(objectMapper.writeValueAsString(bookingCheckoutRequest))
             ).andExpect(status().isConflict());
         }
 
@@ -203,7 +238,7 @@ public class BookingControllerTests extends AbstractControllerTest {
 
     @Nested
     @DisplayName("Cancelling booking (DELETEMAPPING /bookings/{id})")
-    class CancellBooking {
+    class CancelBooking {
         private final UUID bookingId = UUID.randomUUID();
         private final String URL = "/api/bookings/" + bookingId;
 

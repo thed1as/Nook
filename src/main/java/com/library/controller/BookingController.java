@@ -1,7 +1,8 @@
 package com.library.controller;
 
-import com.library.dto.booking.BookingRequest;
 import com.library.dto.booking.BookingResponse;
+import com.library.dto.checkout.BookingCheckoutRequest;
+import com.library.dto.checkout.BookingCheckoutResponse;
 import com.library.service.BookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,9 +25,9 @@ public class BookingController {
 //    CHANGE THAT USERNAME LATER TO AUTHENTICATION
     @Operation(summary = "Create booking")
     @PostMapping("/booking")
-    public ResponseEntity<BookingResponse> create(@Valid @RequestBody BookingRequest bookingRequest) {
-        BookingResponse br = bookingService.createBooking(bookingRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(br);
+    public ResponseEntity<BookingCheckoutResponse> create(@Valid @RequestBody BookingCheckoutRequest bookingRequest) {
+        BookingCheckoutResponse bcr = bookingService.createBooking(bookingRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(bcr);
     }
 
     @Operation(summary = "Find booking by id")

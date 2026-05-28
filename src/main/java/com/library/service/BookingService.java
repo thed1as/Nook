@@ -2,20 +2,26 @@ package com.library.service;
 
 import com.library.dto.booking.BookingRequest;
 import com.library.dto.booking.BookingResponse;
+import com.library.dto.checkout.BookingCheckoutRequest;
+import com.library.dto.checkout.BookingCheckoutResponse;
+import com.library.dto.exception.customException.forbiden.ForbiddenUserException;
 import com.library.entity.Booking;
 import com.library.entity.Listing;
+import com.library.entity.Payment;
 import com.library.entity.User;
+import com.library.enums.PaymentStatus;
 import com.library.enums.Status;
+import com.library.mapper.BookingCheckoutMapper;
 import com.library.mapper.BookingMapper;
 import com.library.repository.BookingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -27,7 +33,10 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
     private final ListingService listingService;
+    private final PaymentService paymentService;
+    private final StripeService stripeService;
     private final BookingMapper bookingMapper;
+    private final BookingCheckoutMapper bookingCheckoutMapper;
 
     @Value("${app.booking.cancellation-window-days}")
     private long cancellationWindowDays;
@@ -44,8 +53,10 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse createBooking(BookingRequest bookingRequest) {
+    public BookingCheckoutResponse createBooking(BookingCheckoutRequest bookingCheckinRequest) {
         String email = userService.getCurrentUserEmail();
+
+        BookingRequest bookingRequest = bookingCheckinRequest.getBookingRequest();
 
         if(!bookingRequest.getCheckOutDate().isAfter(bookingRequest.getCheckInDate())) {
             throw new IllegalStateException("Invalid date range");
@@ -68,7 +79,7 @@ public class BookingService {
             throw new IllegalStateException("Listing is already occupied");
         }
 
-        BigDecimal totalPrice = getFullPrice(bookingRequest.getCheckInDate(), bookingRequest.getCheckOutDate(), listing.getPricePerNight());
+        BigDecimal totalPrice = getFullPrice(bookingRequest.getCheckInDate(),bookingRequest.getCheckOutDate(), listing.getPricePerNight());
 
         Booking booking = new Booking();
         booking.setCheckInDate(bookingRequest.getCheckInDate());
@@ -81,18 +92,21 @@ public class BookingService {
 
         bookingRepository.save(booking);
 
-        return bookingMapper.toBookingResponse(booking);
+        String stripeId = paymentService.initializePayment(booking,
+                bookingCheckinRequest.getPaymentRequest());
+
+        return bookingCheckoutMapper.toBookingCheckoutResponse(bookingMapper.toBookingResponse(booking), stripeId);
     }
 
     @Transactional
     public BookingResponse cancelBooking(UUID bookingId) {
         String email = userService.getCurrentUserEmail();
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findDetailedForCancelById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
                         + bookingId));
         if(!booking.getUser().getEmail().equals(email) &&
                 !booking.getListing().getUser().getEmail().equals(email)) {
-            throw new IllegalStateException("You is not owner of booking");
+            throw new ForbiddenUserException("You is not owner of booking");
         }
 
         if(booking.getStatus().equals(Status.CANCELLED)) {
@@ -106,7 +120,12 @@ public class BookingService {
         }
         booking.setStatus(Status.CANCELLED);
         bookingRepository.save(booking);
-//        back the payment
+
+        Payment payment = booking.getPayment();
+        if(payment.getStatus().equals(PaymentStatus.COMPLETED)) {
+            paymentService.processRefundForCancellationBooking(payment);
+        }
+
         return bookingMapper.toBookingResponse(booking);
     }
 
@@ -134,5 +153,11 @@ public class BookingService {
     @Transactional(readOnly = true)
     public boolean isAvailable(UUID listingId, LocalDateTime in, LocalDateTime out) {
         return !bookingRepository.isListOccupied(listingId, in, out);
+    }
+
+    @Scheduled(fixedDelay = 300000)
+    @Transactional
+    public void cancelExpiredBookings() {
+        LocalDateTime trashold = LocalDateTime.now().minusDays(24);
     }
 }
