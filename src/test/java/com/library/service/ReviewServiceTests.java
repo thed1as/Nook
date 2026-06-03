@@ -67,9 +67,9 @@ public class ReviewServiceTests {
             UUID listingId = UUID.randomUUID();
             Pageable pageable = PageRequest.of(0, 3);
 
-            Review review1 = Review.builder().reviewId(UUID.randomUUID()).comment("good.").build();
-            Review review2 = Review.builder().reviewId(UUID.randomUUID()).comment("bad.").build();
-            Review review3 = Review.builder().reviewId(UUID.randomUUID()).comment("not bad. Normally more accurate").build();
+            Review review1 = Review.builder().reviewId(1L).comment("good.").build();
+            Review review2 = Review.builder().reviewId(2L).comment("bad.").build();
+            Review review3 = Review.builder().reviewId(3L).comment("not bad. Normally more accurate").build();
 
             List<Review> reviews = List.of(
                     review1, review2, review3
@@ -292,7 +292,7 @@ public class ReviewServiceTests {
         @Test
         @DisplayName("update review succesfully")
         void updateReview_successfully() {
-            UUID reviewId = UUID.randomUUID();
+            Long reviewId = 1L;
             UUID listingId = UUID.randomUUID();
             UpdateReviewRequest urr = new UpdateReviewRequest();
             urr.setComment("Updated comment!");
@@ -350,7 +350,7 @@ public class ReviewServiceTests {
         @DisplayName("Review not found should throw entity not found")
         void reviewNotFound_shouldThrowEntityNotFound() {
             UpdateReviewRequest urr = new UpdateReviewRequest();
-            UUID reviewId = UUID.randomUUID();
+            Long reviewId = 1L;
             UUID listingId = UUID.randomUUID();
             when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.empty());
 
@@ -365,7 +365,7 @@ public class ReviewServiceTests {
         @DisplayName("User not owner of review")
         void notOwnerOfReview_shouldThrowIllegalStateException() {
             UpdateReviewRequest urr = new UpdateReviewRequest();
-            UUID reviewId = UUID.randomUUID();
+            Long reviewId = 1L;
             UUID listingId = UUID.randomUUID();
 
             User owner = new User();
@@ -390,7 +390,7 @@ public class ReviewServiceTests {
     }
 
     @Nested
-    @DisplayName("delet reviews")
+    @DisplayName("delete reviews")
     class deleteReview {
 //        1. Successfully deleted this review
 //        2. Not found review
@@ -398,7 +398,7 @@ public class ReviewServiceTests {
         @Test
         @DisplayName("delete reviews successful")
         void shouldDeleteReviewSuccessfully() {
-            UUID reviewId = UUID.randomUUID();
+            Long reviewId = 1L;
             UUID listingId = UUID.randomUUID();
 
             User user = new User();
@@ -431,7 +431,7 @@ public class ReviewServiceTests {
         @Test
         @DisplayName("review not found should throw EntityNotFound")
         void reviewNotFound_shouldThrowEntityNotFound() {
-            UUID reviewId = UUID.randomUUID();
+            Long reviewId = 1L;
             UUID listingId = UUID.randomUUID();
             when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.empty());
             assertThatThrownBy(() -> reviewService.deleteReview(reviewId))
@@ -444,7 +444,7 @@ public class ReviewServiceTests {
         @Test
         @DisplayName("you are not owner of this review should throw IllegalStateException")
         void notOwner_shouldThrowIllegalStateException() {
-            UUID reviewId = UUID.randomUUID();
+            Long reviewId = 1L;
             UUID listingId = UUID.randomUUID();
 
             User owner = new User();

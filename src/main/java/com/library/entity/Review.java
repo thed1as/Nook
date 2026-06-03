@@ -16,8 +16,8 @@ import java.util.UUID;
 @Table(name = "reviews")
 public class Review {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID reviewId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long reviewId;
 
     @Column(precision = 38, scale = 2)
     private BigDecimal rating;

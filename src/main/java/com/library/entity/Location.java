@@ -16,8 +16,8 @@ import java.util.UUID;
 @Table(name = "location", uniqueConstraints = {@UniqueConstraint(name = "UniqueAddress", columnNames = {"country", "city", "address"})})
 public class Location {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID locationId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long locationId;
 
     @Column(nullable = false)
     private String country;

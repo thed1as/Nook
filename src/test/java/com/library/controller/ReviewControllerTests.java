@@ -164,7 +164,7 @@ public class ReviewControllerTests extends AbstractControllerTest {
     @DisplayName("update Reviews (/listing/{id}/reviews")
     class UpdateReviews {
         private final UUID listingId = UUID.randomUUID();
-        private final UUID reviewId = UUID.randomUUID();
+        private final Long reviewId = 1L;
         private final String URL = "/api/listing/" + listingId + "/reviews/" + reviewId;
 
         @Test

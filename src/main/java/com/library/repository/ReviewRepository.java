@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 
-public interface ReviewRepository extends JpaRepository<Review, UUID> {
+public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @EntityGraph(attributePaths = {"user"})
     List<Review> findTop3ByListing_ListingIdOrderByCreatedAtDesc(UUID listingListingId);
@@ -26,9 +26,9 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     @EntityGraph(attributePaths = {"user", "listing"})
     @Query("SELECT r FROM Review r WHERE r.reviewId = :reviewId")
-    Optional<Review> findByDetailedReviewId(@Param("reviewId") UUID reviewId);
+    Optional<Review> findByDetailedReviewId(@Param("reviewId") Long reviewId);
 
     @Modifying
     @Query("DELETE FROM Review r WHERE r.reviewId = :reviewId")
-    void deleteByDetailedId(@Param("reviewId") UUID id);
+    void deleteByDetailedId(@Param("reviewId") Long id);
 }

@@ -9,6 +9,6 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 public class ListingImageResponse {
-    private UUID id;
+    private Long id;
     private String url;
 }

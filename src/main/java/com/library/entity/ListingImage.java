@@ -16,8 +16,8 @@ import java.util.UUID;
 @Table(name = "listing_image")
 public class ListingImage {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID listingImageId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long listingImageId;
 
     private String fileName;
 

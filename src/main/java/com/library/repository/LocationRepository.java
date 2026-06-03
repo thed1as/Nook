@@ -9,15 +9,15 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface LocationRepository extends JpaRepository<Location, UUID> {
+public interface LocationRepository extends JpaRepository<Location, Long> {
     boolean existsByCountryAndCityAndAddress(String country, String city, String address);
 
     Optional<Location> findByCountryAndCityAndAddress(String country, String city, String address);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO location (location_id, address, city, country)
-        VALUES (gen_random_uuid(), :address, :city, :country)
+        INSERT INTO location (address, city, country)
+        VALUES (:address, :city, :country)
         ON CONFLICT ON CONSTRAINT uniqueaddress DO NOTHING
     """, nativeQuery = true)
     void insertIgnore(@Param("country") String country,

@@ -21,6 +21,7 @@ import java.util.UUID;
 public class Listing {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID listingId;
 
     private String title;

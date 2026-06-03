@@ -13,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewResponse {
-    private UUID reviewId;
+    private Long reviewId;
     private BigDecimal rating;
     private String comment;
     private String username;

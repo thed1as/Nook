@@ -82,7 +82,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewResponse updateReview(UpdateReviewRequest updateReviewRequest, UUID reviewId) {
+    public ReviewResponse updateReview(UpdateReviewRequest updateReviewRequest, Long reviewId) {
         Review review = reviewRepository.findByDetailedReviewId(reviewId).orElseThrow(EntityNotFoundException::new);
         if(!userService.getCurrentUserEmail().equals(review.getUser().getEmail())) {
             throw new IllegalStateException("Not your review!");
@@ -106,7 +106,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public void deleteReview(UUID reviewId) {
+    public void deleteReview(Long reviewId) {
         Review review = reviewRepository.findByDetailedReviewId(reviewId).orElseThrow(EntityNotFoundException::new);
         if(!review.getUser().getEmail().equals(userService.getCurrentUserEmail())) {
             throw new IllegalStateException("Not your review!");

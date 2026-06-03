@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE location
 (
-    location_id uuid         NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    location_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     address     varchar(255) NOT NULL,
     city        varchar(255) NOT NULL,
     country     varchar(255) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE listing
     title           varchar(255),
     updated_at      timestamp(6),
 
-    location_id     uuid,
+    location_id     BIGINT,
     user_id         uuid,
 
     CONSTRAINT fk_listing_location
@@ -98,7 +98,7 @@ CREATE TABLE payment
 
 CREATE TABLE listing_image
 (
-    listing_image_id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    listing_image_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     file_name        varchar(255),
     listing_id       uuid,
 
@@ -108,7 +108,7 @@ CREATE TABLE listing_image
 
 CREATE TABLE reviews
 (
-    review_id          uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    review_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     comment            varchar(255),
     created_at         timestamp(6),
     rating             numeric(38, 2),

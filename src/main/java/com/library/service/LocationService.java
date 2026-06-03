@@ -3,13 +3,10 @@ package com.library.service;
 import com.library.dto.location.LocationRequest;
 import com.library.entity.Location;
 import com.library.repository.LocationRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

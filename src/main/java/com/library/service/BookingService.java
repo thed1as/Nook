@@ -92,13 +92,13 @@ public class BookingService {
         Booking booking = bookingRepository.findDetailedForCancelById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id:"
                         + bookingId));
+        if(booking.getStatus().equals(Status.COMPLETED) || booking.getStatus().equals(Status.CANCELLED)) {
+            throw new IllegalStateException("Cannot cancel booking with status: " + booking.getStatus());
+        }
+
         if(!booking.getUser().getEmail().equals(email) &&
                 !booking.getListing().getUser().getEmail().equals(email)) {
             throw new ForbiddenUserException("You is not owner of booking");
-        }
-
-        if(booking.getStatus().equals(Status.CANCELLED)) {
-            throw new IllegalStateException("Booking is already cancelled");
         }
 
         if((LocalDateTime.now().isAfter(booking.getCheckInDate().minusDays(cancellationWindowDays)) ||

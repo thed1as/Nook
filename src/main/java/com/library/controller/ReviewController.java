@@ -32,25 +32,24 @@ public class  ReviewController {
     }
 
     @PreAuthorize("hasRole('USER') or hasRole('HOST')")
-    @PostMapping("/listing/{id}/reviews")
+    @PostMapping("/listing/{listingId}/reviews")
     public ResponseEntity<ReviewResponse> createReview(@Valid @RequestBody ReviewRequest reviewRequest,
-                                                       @PathVariable UUID id) {
-        ReviewResponse rr = reviewService.addReview(reviewRequest, id);
+                                                       @PathVariable UUID listingId) {
+        ReviewResponse rr = reviewService.addReview(reviewRequest, listingId);
         return ResponseEntity.status(HttpStatus.CREATED).body(rr);
     }
 
     @PreAuthorize("hasRole('USER') or hasRole('HOST')")
-    @PutMapping("/listing/{listingId}/reviews/{reviewId}")
+    @PutMapping("/listing/reviews/{reviewId}")
     public ResponseEntity<ReviewResponse> updateReview(@Valid @RequestBody UpdateReviewRequest updateReviewRequest,
-                                                       @PathVariable UUID reviewId) {
+                                                       @PathVariable Long reviewId) {
         ReviewResponse rr = reviewService.updateReview(updateReviewRequest, reviewId);
         return ResponseEntity.ok(rr);
     }
 
     @PreAuthorize("hasRole('USER') or hasRole('HOST')")
-    @DeleteMapping("/listing/{listingId}/reviews/{reviewId}")
-    public ResponseEntity<Void> deleteReview(@PathVariable UUID listingId,
-                                                       @PathVariable UUID reviewId) {
+    @DeleteMapping("/listing/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.noContent().build();
     }
