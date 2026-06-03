@@ -6,6 +6,7 @@ import com.library.repository.LocationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -22,13 +23,9 @@ public class LocationService {
         String city = request.getCity().toLowerCase();
         String address = request.getAddress().toLowerCase();
 
+        locationRepository.insertIgnore(country, city, address);
+
         return locationRepository.findByCountryAndCityAndAddress(country, city, address)
-                .orElseGet(() -> {
-                    Location newLoc = new Location();
-                    newLoc.setCountry(country);
-                    newLoc.setCity(city);
-                    newLoc.setAddress(address);
-                    return locationRepository.save(newLoc);
-                });
+                .orElseThrow(() -> new IllegalStateException("Location not found"));
     }
 }

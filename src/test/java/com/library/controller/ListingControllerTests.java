@@ -153,16 +153,19 @@ public class ListingControllerTests extends AbstractControllerTest {
             lr.setListingId(UUID.randomUUID());
             List<ListingResponse> llr = new ArrayList<>();
             llr.add(lr);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<ListingResponse> lrp = new PageImpl<>(llr, pageable, llr.size());
 
             when(userService.getCurrentUserEmail()).thenReturn(email);
-            when(listingService.getUsersListings(email)).thenReturn(llr);
+            when(listingService.getUsersListings(eq(email), any(Pageable.class)))
+                    .thenReturn(lrp);
 
             mockMvc.perform(get(URL)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
-            ).andExpect(status().isOk()
-            ).andExpect(jsonPath("$[0].listingId")
-                    .value(lr.getListingId().toString()));
+            ).andExpect(status().isOk())
+                    .andExpect(jsonPath("content[0].listingId").value(lr.getListingId().toString()));
         }
 
         @Test

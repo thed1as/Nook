@@ -15,6 +15,7 @@ import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
+    @EntityGraph(attributePaths = {"user"})
     List<Review> findTop3ByListing_ListingIdOrderByCreatedAtDesc(UUID listingListingId);
 
     @EntityGraph(attributePaths = {"user"})

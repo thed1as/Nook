@@ -311,8 +311,7 @@ public class ReviewServiceTests {
             review.setUser(user);
             review.setListing(listing);
 
-            when(listingRepository.existsById(listingId)).thenReturn(true);
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+            when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.of(review));
             when(userService.getCurrentUserEmail()).thenReturn(user.getEmail());
 
             doAnswer(invocation -> {
@@ -323,7 +322,6 @@ public class ReviewServiceTests {
                 return null;
             }).when(reviewMapper).updateReview(any(UpdateReviewRequest.class), any(Review.class));
 
-            when(listingRepository.existsById(listingId)).thenReturn(true);
 
             when(reviewMapper.toReviewResponse(any(Review.class)))
                     .thenReturn(ReviewResponse.builder()
@@ -331,7 +329,7 @@ public class ReviewServiceTests {
                             .comment(urr.getComment())
                             .build());
 
-            ReviewResponse result = reviewService.updateReview(urr, listingId, reviewId);
+            ReviewResponse result = reviewService.updateReview(urr, reviewId);
 
             assertThat(result).isNotNull();
             assertThat(result.getComment()).isEqualTo("Updated comment!");
@@ -349,29 +347,14 @@ public class ReviewServiceTests {
         }
 
         @Test
-        @DisplayName("Listing not found should throw entity not found")
-        void listingNotFound_shouldThrowEntityNotFound() {
-            UpdateReviewRequest urr = new UpdateReviewRequest();
-            UUID reviewId = UUID.randomUUID();
-            UUID listingId = UUID.randomUUID();
-
-            when(listingRepository.existsById(listingId)).thenReturn(false);
-
-            assertThatThrownBy(() -> {reviewService.updateReview(urr, listingId, reviewId);})
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessage("Listing not exists");
-        }
-
-        @Test
         @DisplayName("Review not found should throw entity not found")
         void reviewNotFound_shouldThrowEntityNotFound() {
             UpdateReviewRequest urr = new UpdateReviewRequest();
             UUID reviewId = UUID.randomUUID();
             UUID listingId = UUID.randomUUID();
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
-            when(listingRepository.existsById(listingId)).thenReturn(true);
+            when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> reviewService.updateReview(urr, listingId, reviewId))
+            assertThatThrownBy(() -> reviewService.updateReview(urr, reviewId))
                     .isInstanceOf(EntityNotFoundException.class);
 
             verify(listingRepository, never()).save(any(Listing.class));
@@ -394,12 +377,10 @@ public class ReviewServiceTests {
             Review review = new Review();
             review.setUser(owner);
             review.setReviewId(reviewId);
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+            when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.of(review));
             when(userService.getCurrentUserEmail()).thenReturn(user.getEmail());
-            when(listingRepository.existsById(listingId))
-                    .thenReturn(true);
 
-            assertThatThrownBy(() -> reviewService.updateReview(urr, listingId, reviewId))
+            assertThatThrownBy(() -> reviewService.updateReview(urr, reviewId))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Not your review!");
 
@@ -433,11 +414,10 @@ public class ReviewServiceTests {
             review.setListing(listing);
             review.setUser(user);
 
-            when(listingService.getListingOrThrow(listingId)).thenReturn(listing);
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+            when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.of(review));
             when(userService.getCurrentUserEmail()).thenReturn(user.getEmail());
 
-            reviewService.deleteReview(reviewId, listingId);
+            reviewService.deleteReview(reviewId);
 
             ArgumentCaptor<Listing> listingCaptor = ArgumentCaptor.forClass(Listing.class);
             verify(listingRepository).save(listingCaptor.capture());
@@ -446,15 +426,15 @@ public class ReviewServiceTests {
             assertThat(saved.getReviewsCount()).isEqualTo(1L);
             assertThat(saved.getAverageRating()).isEqualTo(new BigDecimal("5.00"));
 
-            verify(reviewRepository, times(1)).delete(review);
+            verify(reviewRepository, times(1)).deleteByDetailedId(reviewId);
         }
         @Test
         @DisplayName("review not found should throw EntityNotFound")
         void reviewNotFound_shouldThrowEntityNotFound() {
             UUID reviewId = UUID.randomUUID();
             UUID listingId = UUID.randomUUID();
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
-            assertThatThrownBy(() -> reviewService.deleteReview(reviewId, listingId))
+            when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.empty());
+            assertThatThrownBy(() -> reviewService.deleteReview(reviewId))
                     .isInstanceOf(EntityNotFoundException.class);
 
             verify(listingRepository, never()).save(any(Listing.class));
@@ -476,37 +456,15 @@ public class ReviewServiceTests {
             Review review = new Review();
             review.setUser(owner);
 
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+            when(reviewRepository.findByDetailedReviewId(reviewId)).thenReturn(Optional.of(review));
             when(userService.getCurrentUserEmail()).thenReturn(user.getEmail());
 
-            assertThatThrownBy(() -> {reviewService.deleteReview(reviewId, listingId);})
+            assertThatThrownBy(() -> {reviewService.deleteReview(reviewId);})
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Not your review!");
 
             verify(listingRepository, never()).save(any(Listing.class));
             verify(reviewRepository, never()).delete(any(Review.class));
-        }
-
-        @Test
-        @DisplayName("Listing not found should throw Entity Not Found")
-        void notListing_shouldThrowEntityNotFound() {
-            UUID reviewId = UUID.randomUUID();
-            UUID listingId = UUID.randomUUID();
-
-            User user = new User();
-            user.setEmail("test@gmail.com");
-
-            Review review = new Review();
-            review.setUser(user);
-
-            when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
-            when(userService.getCurrentUserEmail()).thenReturn(user.getEmail());
-            when(listingService.getListingOrThrow(listingId))
-                    .thenThrow(new EntityNotFoundException("entity not exists"));
-
-            assertThatThrownBy(() -> {reviewService.deleteReview(reviewId, listingId);})
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessage("entity not exists");
         }
     }
 }

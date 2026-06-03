@@ -179,7 +179,7 @@ public class ReviewControllerTests extends AbstractControllerTest {
             expectedResponse.setComment("test comment");
             expectedResponse.setRating(new BigDecimal("5.00"));
 
-            when(reviewService.updateReview(updateReviewRequest, reviewId, listingId))
+            when(reviewService.updateReview(updateReviewRequest, reviewId))
                     .thenReturn(expectedResponse);
 
             mockMvc.perform(put(URL)

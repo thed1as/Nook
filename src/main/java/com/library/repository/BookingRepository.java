@@ -2,6 +2,8 @@ package com.library.repository;
 
 import com.library.entity.Booking;
 import com.library.enums.Status;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,8 +32,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             "listing.user",
             "payment"
     })
-    @Query("SELECT b FROM Booking b WHERE b.user.email = :email")
-    List<Booking> findUserBookingsByEmail(String email);
+    @Query("SELECT b FROM Booking b WHERE b.bookingId IN :ids")
+    List<Booking> findUserBookings(@Param("ids") List<UUID> ids);
 
     @EntityGraph(attributePaths = {
             "user",
@@ -41,7 +43,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             "listing.user"
     })
     @Query("SELECT b FROM Booking b WHERE b.listing.listingId = :listingId")
-    List<Booking> findListingBookingsById(UUID listingId);
+    Page<Booking> findListingBookingsById(UUID listingId, Pageable pageable);
 
     @Query("""
         SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END
@@ -66,11 +68,10 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     );
 
     @EntityGraph(attributePaths = {
+            "user",
+            "payment",
             "listing",
-            "listing.location",
-            "listing.image",
-            "listing.review",
-            "user"
+            "listing.location"
     })
     @Query("SELECT b FROM Booking b WHERE b.bookingId = :bookingId")
     Optional<Booking> findByDetailedId(@Param("bookingId") UUID bookingId);
@@ -79,8 +80,12 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {
             "user",
             "listing",
+            "listing.location",
             "listing.user",
             "payment"
     })
     Optional<Booking> findDetailedForCancelById(@Param("bookingId") UUID bookingId);
+
+    @Query("SELECT b.bookingId FROM Booking b WHERE b.user.email = :email")
+    Page<UUID> findAllIdsOfUser(Pageable pageable,@Param("email") String email);
 }

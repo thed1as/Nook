@@ -9,10 +9,10 @@ spring:
       ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-    show-sql: true
+    show-sql: false
     properties:
-      hibernate.hibernate.format_sql: true
-      hibernate.hibernate.generate_statistics: true
+      hibernate.hibernate.format_sql: false
+      hibernate.hibernate.generate_statistics: false
       hibernate.hibernate.jdbc.batch_size: 20
       hibernate:
         order_updates: true

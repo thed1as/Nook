@@ -8,11 +8,11 @@ import com.library.mapper.ReviewMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.ListingRepository;
 import com.library.repository.ReviewRepository;
-import com.library.repository.ReviewStats;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Pageable;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +53,7 @@ public class ListingService {
                 .createLocationOrGet(listingRequest.getLocationRequest());
 
 
-        user.addListing(listing);
+        listing.setUser(user);
         loc.addListing(listing);
 
         listingRepository.save(listing);
@@ -97,21 +96,23 @@ public class ListingService {
     @Transactional
     public ListingResponse updateListing(UpdateListingRequest req,
                                          UUID listingId) {
-        Listing listing = getListingDetailedOrThrow(listingId);
+        getListingWithLockOrThrow(listingId);
         String email = userService.getCurrentUserEmail();
+        Listing listing = getListingDetailedOrThrow(listingId);
         if(!listing.getUser().getEmail().equals(email)) {
             throw new IllegalStateException("Not your listing");
         }
 
-        LocationRequest newLoc = req.getLocationRequest();
-        Location currentLoc = listing.getLocation();
+        if(req.getLocationRequest() != null) {
+            LocationRequest newLoc = req.getLocationRequest();
+            Location currentLoc = listing.getLocation();
+            if (!currentLoc.getCountry().equals(newLoc.getCountry().toLowerCase()) ||
+                    !currentLoc.getCity().equals(newLoc.getCity().toLowerCase()) ||
+                    !currentLoc.getAddress().equals(newLoc.getAddress().toLowerCase())) {
 
-        if (!currentLoc.getCountry().equals(newLoc.getCountry().toLowerCase()) ||
-                !currentLoc.getCity().equals(newLoc.getCity().toLowerCase()) ||
-                !currentLoc.getAddress().equals(newLoc.getAddress().toLowerCase())) {
-
-            Location updLoc = locationService.createLocationOrGet(req.getLocationRequest());
-            listing.setLocation(updLoc);
+                Location updLoc = locationService.createLocationOrGet(req.getLocationRequest());
+                listing.setLocation(updLoc);
+            }
         }
 
         listingMapper.updateListing(req, listing);
@@ -121,30 +122,40 @@ public class ListingService {
 
 //    SEARCHING
 
+        @Transactional(readOnly = true)
+        public FullListingResponse getListingById(UUID listingId) {
+            Listing listing = listingRepository.findByDetailedId(listingId)
+                    .orElseThrow(EntityNotFoundException::new);
+
+            List<Review> top3 = reviewRepository
+                    .findTop3ByListing_ListingIdOrderByCreatedAtDesc(listingId);
+
+            return listingMapper.toFullListingResponse(listing, top3);
+        }
+
     @Transactional(readOnly = true)
-    public FullListingResponse getListingById(UUID listingId) {
-        Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(EntityNotFoundException::new);
+    public Page<ListingResponse> getUsersListings(String email, Pageable pageable) {
+        Page<UUID> ids = listingRepository.findAllIdsByUserEmail(email, pageable);
 
-        List<Review> top3 = reviewRepository
-                .findTop3ByListing_ListingIdOrderByCreatedAtDesc(listingId);
+        if(ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
 
-        return listingMapper.toFullListingResponse(listing, top3);
-    }
+        List<Listing> listings = listingRepository.findAllDetailedByUserEmail(ids.getContent());
 
-    @Transactional(readOnly = true)
-    public List<ListingResponse> getUsersListings(String email) {
-        return listingRepository.findAllByUserEmail(email).stream()
-                .map(listingMapper::toListingResponse).collect(Collectors.toList());
+        return new PageImpl<>(listings, pageable, ids.getTotalElements()).map(listingMapper::toListingResponse);
     }
 
     public Page<ShortListingResponse> getAll(Pageable pageable) {
-        Page<Listing> page = listingRepository.findAll(pageable);
-        page.stream().forEach(listing -> {
-            System.out.println(listing.getListingImages().size());
-            System.out.println(listing.getAverageRating() + " " + listing.getReviewsCount());
-        });
-        return page.map(listingMapper::toShortListingResponse);
+        Page<UUID> idPage = listingRepository.findAllIds(pageable);
+
+        if(idPage.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Listing> listings = listingRepository.findAllByDetailedIds(idPage.getContent());
+
+        return new PageImpl<>(listings, pageable, idPage.getTotalElements()).map(listingMapper::toShortListingResponse);
     }
 
     public Page<ListingResponse> getListingsByFilter(ListingFilterRequest listingFilterRequest, Pageable pageable) {
@@ -161,8 +172,6 @@ public class ListingService {
 
         List<UUID> listingIds = res.getContent().stream().map(Listing::getListingId).toList();
 
-        listingRepository.findAllWithRelationByIds(listingIds);
-
         return res.map(listingMapper::toListingResponse);
     }
 
@@ -170,11 +179,18 @@ public class ListingService {
 
     @Transactional
     public void deleteListingById(UUID listingId) {
+        if(bookingRepository.existsById(listingId)) {
+            throw new IllegalStateException("Booking doesn't exists");
+        }
         if(bookingRepository.existsActiveBookingsForListing(listingId)) {
             throw new IllegalStateException("Cannot delete booking with active future bookings");
         }
 
+        String email = userService.getCurrentUserEmail();
         Listing listing = listingRepository.findById(listingId).orElseThrow(EntityNotFoundException::new);
+        if(!listing.getUser().getEmail().equals(email)) {
+            throw new IllegalStateException("Not your listing");
+        }
         List<ListingImage> images = listing.getListingImages();
         for(ListingImage image : images) {
             minioService.deleteFile(image.getFileName());
@@ -191,9 +207,13 @@ public class ListingService {
     }
 
     @Transactional(readOnly = true)
-    public Listing getListingDetailedOrThrow(UUID listingId) {
-        return listingRepository.findByDetailedIdWithLock(listingId)
+    public void getListingWithLockOrThrow(UUID listingId) {
+        listingRepository.findByIdWithLock(listingId)
                 .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
     }
-
+    @Transactional(readOnly = true)
+    public Listing getListingDetailedOrThrow(UUID listingId) {
+        return listingRepository.findByDetailedId(listingId)
+                .orElseThrow(() -> new EntityNotFoundException("entity not exists"));
+    }
 }

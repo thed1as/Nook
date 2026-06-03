@@ -17,8 +17,7 @@ import java.util.UUID;
 @Entity @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "payment",
-    indexes = @Index(name = "idx_payment_statusAndCreatedAt", columnList = "status, createdAt"))
+@Table(name = "payment")
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +25,8 @@ public class  ReviewController {
 
     @PreAuthorize("hasRole('USER') or hasRole('HOST')")
     @GetMapping("/listing/{id}/reviews")
-    public ResponseEntity<Page<ReviewResponse>> getReviews(@PathVariable UUID id, Pageable pageable) {
+    public ResponseEntity<Page<ReviewResponse>> getReviews(@PathVariable UUID id,
+                                                           @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<ReviewResponse> prs = reviewService.getAllReviewsOfListing(id, pageable);
         return ResponseEntity.ok(prs);
     }
@@ -39,9 +42,8 @@ public class  ReviewController {
     @PreAuthorize("hasRole('USER') or hasRole('HOST')")
     @PutMapping("/listing/{listingId}/reviews/{reviewId}")
     public ResponseEntity<ReviewResponse> updateReview(@Valid @RequestBody UpdateReviewRequest updateReviewRequest,
-                                                       @PathVariable UUID listingId,
                                                        @PathVariable UUID reviewId) {
-        ReviewResponse rr = reviewService.updateReview(updateReviewRequest, reviewId, listingId);
+        ReviewResponse rr = reviewService.updateReview(updateReviewRequest, reviewId);
         return ResponseEntity.ok(rr);
     }
 
@@ -49,7 +51,7 @@ public class  ReviewController {
     @DeleteMapping("/listing/{listingId}/reviews/{reviewId}")
     public ResponseEntity<Void> deleteReview(@PathVariable UUID listingId,
                                                        @PathVariable UUID reviewId) {
-        reviewService.deleteReview(reviewId, listingId);
+        reviewService.deleteReview(reviewId);
         return ResponseEntity.noContent().build();
     }
 }

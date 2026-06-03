@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -67,15 +69,17 @@ public class ListingController {
     @Operation(summary = "Find users listings by id")
     @PreAuthorize("hasRole('HOST')")
     @GetMapping("/listings/my")
-    public ResponseEntity<List<ListingResponse>> getUserListings() {
+    public ResponseEntity<Page<ListingResponse>> getUserListings(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         String email = userService.getCurrentUserEmail();
-        List<ListingResponse> lr = listingService.getUsersListings(email);
+        Page<ListingResponse> lr = listingService.getUsersListings(email, pageable);
         return ResponseEntity.ok(lr);
     }
 
     @Operation(summary = "Find all listings")
     @GetMapping("/listings")
-    public ResponseEntity<Page<ShortListingResponse>> getListings(Pageable pageable) {
+    public ResponseEntity<Page<ShortListingResponse>> getListings(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable) {
         Page<ShortListingResponse> llr = listingService.getAll(pageable);
         return ResponseEntity.ok(llr);
     }
@@ -84,7 +88,7 @@ public class ListingController {
     @GetMapping("/listings/search")
     public ResponseEntity<Page<ListingResponse>> getListingsByFilter(
             @Valid ListingFilterRequest listingFilterRequest,
-            Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<ListingResponse> llr = listingService.getListingsByFilter(listingFilterRequest, pageable);
 
@@ -104,7 +108,7 @@ public class ListingController {
 //    DELETE
 
     @Operation(summary = "Delete listing by id")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('HOST')")
     @DeleteMapping("/listing/{id}")
     public void delete(@PathVariable UUID id) {
         listingService.deleteListingById(id);

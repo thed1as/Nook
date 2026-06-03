@@ -146,3 +146,31 @@ ALTER TABLE booking
         listing_id WITH =,
         tsrange(check_in_date, check_out_date, '[]') WITH &&
         );
+
+-- indexes
+CREATE INDEX idx_booking_listing_status_dates
+    ON booking(listing_id, status, check_in_date, check_out_date);
+
+CREATE INDEX idx_booking_listing_user_status
+    ON booking(listing_id, user_id, status);
+
+CREATE INDEX idx_booking_status_created
+    ON booking(status, created_at);
+
+CREATE INDEX idx_listing_user
+    ON listing(user_id);
+
+CREATE INDEX idx_listing_created_at
+    ON listing(created_at);
+
+CREATE INDEX idx_reviews_listing_created
+    ON reviews(listing_listing_id, created_at);
+
+CREATE INDEX idx_payment_status_created
+    ON payment(status, created_at);
+
+CREATE UNIQUE INDEX idx_users_email
+    ON users(email);
+
+CREATE INDEX idx_location_city
+    ON location(city);

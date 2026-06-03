@@ -78,16 +78,11 @@ public class ReviewService {
         listing.setAverageRating(newAvg);
         listingRepository.save(listing);
 
-//    I COULD CREATE TWO REVIEWS BUT I SHOULDN'T
-
         return reviewMapper.toReviewResponse(review);
     }
 
     @Transactional
-    public ReviewResponse updateReview(UpdateReviewRequest updateReviewRequest, UUID listingId, UUID reviewId) {
-        if(!listingRepository.existsById(listingId)) {
-            throw new EntityNotFoundException("Listing not exists");
-        }
+    public ReviewResponse updateReview(UpdateReviewRequest updateReviewRequest, UUID reviewId) {
         Review review = reviewRepository.findByDetailedReviewId(reviewId).orElseThrow(EntityNotFoundException::new);
         if(!userService.getCurrentUserEmail().equals(review.getUser().getEmail())) {
             throw new IllegalStateException("Not your review!");
@@ -111,7 +106,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public void deleteReview(UUID reviewId, UUID listingId) {
+    public void deleteReview(UUID reviewId) {
         Review review = reviewRepository.findByDetailedReviewId(reviewId).orElseThrow(EntityNotFoundException::new);
         if(!review.getUser().getEmail().equals(userService.getCurrentUserEmail())) {
             throw new IllegalStateException("Not your review!");

@@ -17,6 +17,9 @@ import com.library.repository.BookingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +35,10 @@ import java.util.stream.Collectors;
 public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
-    private final ListingService listingService;
     private final PaymentService paymentService;
-    private final StripeService stripeService;
     private final BookingMapper bookingMapper;
     private final BookingCheckoutMapper bookingCheckoutMapper;
+    private final BookingTransactionService txService;
 
     @Value("${app.booking.cancellation-window-days}")
     private long cancellationWindowDays;
@@ -52,51 +54,37 @@ public class BookingService {
         return pricePerNight.multiply(BigDecimal.valueOf(days));
     }
 
-    @Transactional
     public BookingCheckoutResponse createBooking(BookingCheckoutRequest bookingCheckinRequest) {
-        String email = userService.getCurrentUserEmail();
-
         BookingRequest bookingRequest = bookingCheckinRequest.getBookingRequest();
+        if(bookingRepository.isListOccupied(
+                bookingRequest.getListingId(),
+                bookingRequest.getCheckInDate(),
+                bookingRequest.getCheckOutDate()
+        )) {
+            throw new IllegalStateException("Listing is already occupied");
+        }
 
+
+        String email = userService.getCurrentUserEmail();
         if(!bookingRequest.getCheckOutDate().isAfter(bookingRequest.getCheckInDate())) {
             throw new IllegalStateException("Invalid date range");
         }
 
-        if(bookingRequest.getCheckInDate().isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("Check-in in the past");
+        Booking pendingBooking = txService.reserveBooking(bookingRequest, email);
+
+        String stripeId;
+        try {
+            stripeId = paymentService.initializePayment(pendingBooking, bookingCheckinRequest.getPaymentRequest());
+        } catch (Exception ex) {
+            txService.failedBooking(pendingBooking.getBookingId());
+            throw new RuntimeException("payment initialize failed", ex);
         }
 
-        User user = userService.getUserByEmail(email);
-        Listing listing = listingService.getListingOrThrow(bookingRequest.getListingId());
-        if(listing.getUser().getEmail().equals(email)) {
-            throw new IllegalStateException("You cannot book your own listing!");
-        }
-
-        if(bookingRepository.isListOccupied(
-                bookingRequest.getListingId(),
-                bookingRequest.getCheckInDate(),
-                bookingRequest.getCheckOutDate())){
-            throw new IllegalStateException("Listing is already occupied");
-        }
-
-        BigDecimal totalPrice = getFullPrice(bookingRequest.getCheckInDate(),bookingRequest.getCheckOutDate(), listing.getPricePerNight());
-
-        Booking booking = new Booking();
-        booking.setCheckInDate(bookingRequest.getCheckInDate());
-        booking.setCheckOutDate(bookingRequest.getCheckOutDate());
-        booking.setTotalPrice(totalPrice);
-        booking.setStatus(Status.PENDING);
-
-        user.addBooking(booking);
-        listing.addBooking(booking);
-
-        bookingRepository.save(booking);
-
-        String stripeId = paymentService.initializePayment(booking,
-                bookingCheckinRequest.getPaymentRequest());
-
-        return bookingCheckoutMapper.toBookingCheckoutResponse(bookingMapper.toBookingResponse(booking), stripeId);
+        return bookingCheckoutMapper.toBookingCheckoutResponse(
+                bookingMapper.toBookingResponse(pendingBooking), stripeId
+        );
     }
+
 
     @Transactional
     public BookingResponse cancelBooking(UUID bookingId) {
@@ -131,23 +119,29 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public BookingResponse getBookingById(UUID bookingId) {
-        return bookingRepository.findById(bookingId)
+        return bookingRepository.findByDetailedId(bookingId)
                 .map(bookingMapper::toBookingResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found with id: " + bookingId));
     }
 
     @Transactional(readOnly = true)
-    public List<BookingResponse> getMyBookings() {
+    public Page<BookingResponse> getMyBookings(Pageable pageable) {
         String email = userService.getCurrentUserEmail();
-        return bookingRepository.findUserBookingsByEmail(email)
-                .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
+
+        Page<UUID> ids = bookingRepository.findAllIdsOfUser(pageable, email);
+
+        if(ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Booking> bookings = bookingRepository.findUserBookings(ids.getContent());
+        return new PageImpl<>(bookings, pageable, bookings.size()).map(bookingMapper::toBookingResponse);
     }
 
     @Transactional
-    public List<BookingResponse> getListingBookings(UUID listingId) {
+    public Page<BookingResponse> getListingBookings(UUID listingId, Pageable pageable) {
 //        show only if user have booking or its owner checking his listing bookings
-        return bookingRepository.findListingBookingsById(listingId)
-                .stream().map(bookingMapper::toBookingResponse).collect(Collectors.toList());
+        return bookingRepository.findListingBookingsById(listingId, pageable).map(bookingMapper::toBookingResponse);
     }
 
     @Transactional(readOnly = true)

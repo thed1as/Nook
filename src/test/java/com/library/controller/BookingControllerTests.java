@@ -14,6 +14,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -206,8 +210,9 @@ public class BookingControllerTests extends AbstractControllerTest {
             List<BookingResponse> brl = new ArrayList<>();
 
             brl.add(br);
+            Page<BookingResponse> brp = new PageImpl<>(brl);
 
-            when(bookingService.getMyBookings()).thenReturn(brl);
+            when(bookingService.getMyBookings(any(Pageable.class))).thenReturn(brp);
 
             mockMvc.perform(get(URL)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -229,9 +234,14 @@ public class BookingControllerTests extends AbstractControllerTest {
             List<BookingResponse> brl = new ArrayList<>();
             brl.add(br);
 
-            when(bookingService.getListingBookings(listingId)).thenReturn(brl);
+            Pageable pageable = PageRequest.of(0, 1);
+            Page<BookingResponse> brp = new PageImpl<>(brl, pageable, brl.size());
+
+            when(bookingService.getListingBookings(listingId, pageable)).thenReturn(brp);
             mockMvc.perform(get(URL)
                     .contentType(MediaType.APPLICATION_JSON)
+                    .param("page", "0")
+                    .param("size", "10")
             ).andExpect(status().isOk());
         }
     }

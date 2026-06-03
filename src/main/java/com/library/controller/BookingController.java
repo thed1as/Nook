@@ -8,11 +8,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Booking", description = "Booking API")
@@ -39,15 +42,17 @@ public class BookingController {
 
     @Operation(summary = "Find bookings")
     @GetMapping("/bookings/my")
-    public ResponseEntity<List<BookingResponse>> getBookings() {
-        List<BookingResponse> lbr = bookingService.getMyBookings();
+    public ResponseEntity<Page<BookingResponse>> getBookings(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<BookingResponse> lbr = bookingService.getMyBookings(pageable);
         return ResponseEntity.ok(lbr);
     }
 
     @Operation(summary = "Find listing bookings")
     @GetMapping("/listings/{id}/bookings")
-    public ResponseEntity<List<BookingResponse>> getListings(@PathVariable UUID id) {
-        List<BookingResponse> lbr = bookingService.getListingBookings(id);
+    public ResponseEntity<Page<BookingResponse>> getListings(@PathVariable UUID id,
+                                                             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<BookingResponse> lbr = bookingService.getListingBookings(id, pageable);
         return ResponseEntity.ok(lbr);
     }
 

@@ -18,27 +18,31 @@ public interface ListingRepository extends JpaRepository<Listing, UUID>, JpaSpec
     @Query("SELECT l FROM Listing l WHERE l.user.userId = :userId")
     List<Listing> findAllByUserId(UUID userId);
 
-    @Query("SELECT l FROM Listing l WHERE l.user.email = :email")
-    @EntityGraph(attributePaths = {"location"})
-    List<Listing> findAllByUserEmail(String email);
+    @Query("SELECT l FROM Listing l WHERE l.listingId IN :id")
+    List<Listing> findAllDetailedByUserEmail(@Param("id") List<UUID> ids);
 
+    @Query("SELECT l.listingId FROM Listing l WHERE l.user.email = :email")
+    Page<UUID> findAllIdsByUserEmail(@Param("email") String email, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT l FROM Listing l WHERE l.listingId = :id")
     Optional<Listing> findByIdWithLock(@Param("id") UUID id);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT l FROM Listing l WHERE l.listingId = :id")
-    @EntityGraph(attributePaths = {"user", "location"})
-    Optional<Listing> findByDetailedIdWithLock(@Param("id") UUID id);
+    @EntityGraph(attributePaths = {"user", "location", "listingImages"})
+    Optional<Listing> findByDetailedId(@Param("id") UUID id);
 
     @EntityGraph(attributePaths = {"location", "user"})
-    Page<Listing> findAll(Pageable pageable);
+    @Query("SELECT l FROM Listing l WHERE l.listingId IN :ids")
+    List<Listing> findAllByDetailedIds(@Param("ids") List<UUID> ids);
+
+    @Query("SELECT l.listingId FROM Listing l")
+    Page<UUID> findAllIds(Pageable pageable);
 
     @Query("SELECT l FROM Listing l LEFT JOIN FETCH l.location LEFT JOIN FETCH l.user WHERE l.listingId IN :ids")
     List<Listing> findAllWithRelationByIds(@Param("ids") List<UUID> listingIds);
 
     @Modifying
-    @Query("DELETE FROM Listing l WHERE l.listingId = :id")
+    @Query("DELETE FROM Listing l WHERE l.listingId = :listingId")
     void deleteDetailedById(@Param("listingId") UUID listingId);
 }

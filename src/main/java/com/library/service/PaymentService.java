@@ -1,15 +1,11 @@
 package com.library.service;
 
 import com.library.dto.exception.customException.forbiden.ForbiddenUserException;
-import com.library.dto.exception.customException.paymentExceptions.PaymentAlreadyExistsException;
 import com.library.dto.exception.customException.paymentExceptions.PaymentNotFoundException;
-import com.library.dto.exception.customException.paymentExceptions.RefundNotAllowedException;
 import com.library.dto.payment.PaymentRequest;
 import com.library.dto.payment.PaymentResponse;
-import com.library.dto.payment.RefundRequest;
 import com.library.entity.Booking;
 import com.library.entity.Payment;
-import com.library.entity.User;
 import com.library.enums.PaymentStatus;
 import com.library.enums.Status;
 import com.library.event.entities.BookingCancelEvent;
@@ -26,6 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -40,26 +37,17 @@ public class PaymentService {
     private final UserService userService;
     private final BookingRepository bookingRepository;
     private final StripeService stripeService;
+    private final PaymentTransactionService txPayment;
     private final PaymentMapper paymentMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.booking.cancellation-window-days}")
     private int cancellationWindowDays;
 
-    @Transactional
     public String initializePayment(Booking booking, PaymentRequest paymentRequest) {
         String stripeId = stripeService.createPayment(booking.getTotalPrice(), paymentRequest.getCurrency());
-        Payment payment = new Payment();
-        payment.setUser(booking.getUser());
-        payment.setBooking(booking);
-        payment.setAmount(booking.getTotalPrice());
-        payment.setCurrency(paymentRequest.getCurrency().toUpperCase());
-        log.debug("paymentMethod: {}", paymentRequest.getPaymentMethod());
-        payment.setStatus(PaymentStatus.PENDING);
-        payment.setMethod(paymentRequest.getPaymentMethod());
-        payment.setStripeId(stripeId);
-        paymentRepository.save(payment);
 
+        txPayment.savePendingPayment(booking, paymentRequest, stripeId);
         return stripeId;
     }
 
