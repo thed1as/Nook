@@ -86,6 +86,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     })
     Optional<Booking> findDetailedForCancelById(@Param("bookingId") UUID bookingId);
 
-    @Query("SELECT b.bookingId FROM Booking b WHERE b.user.email = :email")
-    Page<UUID> findAllIdsOfUser(Pageable pageable,@Param("email") String email);
+    @Query("SELECT b.bookingId FROM Booking b WHERE b.user.userId = :userId")
+    Page<UUID> findAllIdsOfUser(Pageable pageable,@Param("userId") UUID userId);
 }

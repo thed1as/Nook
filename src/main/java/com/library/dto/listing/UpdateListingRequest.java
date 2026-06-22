@@ -18,6 +18,7 @@ public class UpdateListingRequest {
 
     @Positive(message = "Price must be greater then zero")
     private BigDecimal pricePerNight;
+    private String currency;
     private List<ListingImageRequest> listingImageRequest;
     private LocationRequest locationRequest;
 }

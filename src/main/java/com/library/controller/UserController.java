@@ -1,6 +1,5 @@
 package com.library.controller;
 
-import com.library.dto.user.UserRequest;
 import com.library.dto.user.UserResponse;
 import com.library.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +13,7 @@ import java.util.UUID;
 
 @Tag(name = "User", description = "User API")
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;

@@ -28,6 +28,10 @@ public class ListingRequest {
     @Positive(message = "Price must be greater then zero")
     private BigDecimal pricePerNight;
 
+    @NotBlank(message = "currency cannot be null")
+    @Size(max = 3)
+    private String currency;
+
     @Schema(description = "Listing Images")
     private List<ListingImageRequest> listingImageRequests = new ArrayList<>();
 

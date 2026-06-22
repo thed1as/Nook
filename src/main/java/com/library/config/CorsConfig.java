@@ -13,7 +13,10 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("*"); // для dev
+
+//        config.setAllowedOrigins(List.of("https://your-frontend-domain.com")); for production
+        config.addAllowedOriginPattern("*"); // for dev
+
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 

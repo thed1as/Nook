@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.dto.exception.customException.LocationException.LocationException;
 import com.library.dto.location.LocationRequest;
 import com.library.entity.Location;
 import com.library.repository.LocationRepository;
@@ -23,6 +24,6 @@ public class LocationService {
         locationRepository.insertIgnore(country, city, address);
 
         return locationRepository.findByCountryAndCityAndAddress(country, city, address)
-                .orElseThrow(() -> new IllegalStateException("Location not found"));
+                .orElseThrow(() -> new LocationException("Location not found"));
     }
 }

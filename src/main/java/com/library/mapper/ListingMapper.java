@@ -21,6 +21,7 @@ public interface ListingMapper {
     @Mapping(target = "listingImages", source = "listingImages")
     @Mapping(target = "location", source = "location")
     @Mapping(target = "pricePerNight", source = "pricePerNight")
+    @Mapping(target = "currency", source = "currency")
     ListingResponse toListingResponse(Listing listing);
 
 

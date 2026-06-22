@@ -13,8 +13,9 @@ import java.util.UUID;
 public class ListingSpecification {
     public static Specification<Listing> build(ListingFilterRequest filter) {
         return (root, query, cb) -> {
-            if(query.getResultType() != Long.class) {
+            if(query.getResultType() != Long.class && query.getResultType() != long.class) {
                 query.distinct(true);
+                root.fetch("location", JoinType.LEFT);
             }
 
             return Specification.allOf(
@@ -40,7 +41,7 @@ public class ListingSpecification {
     private static Specification<Listing> hasCountry(String country) {
         return (root, query, cb) -> {
             if(!StringUtils.hasText(country)) return null;
-            Join<Listing, Location> join = root.join("location");
+            Join<Listing, Location> join = root.join("location", JoinType.LEFT);
             String countryPattern = "%" + country.toLowerCase() + "%";
             return cb.like(cb.lower(join.get("country")), countryPattern);
         };
@@ -49,7 +50,7 @@ public class ListingSpecification {
     private static Specification<Listing> hasCity(String city) {
         return (root, query, cb) -> {
             if(!StringUtils.hasText(city)) return null;
-            Join<Listing, Location> join = root.join("location");
+            Join<Listing, Location> join = root.join("location", JoinType.LEFT);
             String cityPattern = "%" + city.toLowerCase() + "%";
             return cb.like(cb.lower(join.get("city")), cityPattern);
         };

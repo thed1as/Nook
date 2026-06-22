@@ -25,4 +25,5 @@ public class ListingResponse {
     private List<ListingImageResponse> listingImages = new ArrayList<>();
     private LocationResponse location;
     private BigDecimal pricePerNight;
+    private String currency;
 }

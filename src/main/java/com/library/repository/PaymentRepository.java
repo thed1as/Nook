@@ -45,5 +45,5 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             @Param("threshold") LocalDateTime threshold
     );
 
-    Page<Payment> findByUser_Email(String email, Pageable pageable);
+    Page<Payment> findByUser_UserId(UUID userUserId, Pageable pageable);
 }

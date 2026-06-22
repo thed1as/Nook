@@ -21,8 +21,8 @@ public interface ListingRepository extends JpaRepository<Listing, UUID>, JpaSpec
     @Query("SELECT l FROM Listing l WHERE l.listingId IN :id")
     List<Listing> findAllDetailedByUserEmail(@Param("id") List<UUID> ids);
 
-    @Query("SELECT l.listingId FROM Listing l WHERE l.user.email = :email")
-    Page<UUID> findAllIdsByUserEmail(@Param("email") String email, Pageable pageable);
+    @Query("SELECT l.listingId FROM Listing l WHERE l.user.userId = :userId")
+    Page<UUID> findAllIdsByUserId(@Param("userId") UUID userId, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT l FROM Listing l WHERE l.listingId = :id")

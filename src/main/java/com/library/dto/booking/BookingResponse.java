@@ -24,6 +24,7 @@ public class BookingResponse {
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;
     private BigDecimal totalPrice;
+    private String currency;
     private Status status;
 
     private UUID listingId;

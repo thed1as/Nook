@@ -1,9 +1,11 @@
 package com.library.controller;
 
+import com.library.dto.PageResponse;
 import com.library.dto.listing.*;
-import com.library.entity.Listing;
-import com.library.service.ListingService;
-import com.library.service.UserService;
+import com.library.service.ListingServices.ListingQueryService;
+import com.library.service.ListingServices.ListingCommandService;
+import com.library.service.ListingServices.ListingImageService;
+import com.library.service.ListingServices.ListingSpecificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,11 +27,13 @@ import java.util.UUID;
 
 @Tag(name = "Listing", description = "Listing API")
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class ListingController {
-    private final ListingService listingService;
-    private final UserService userService;
+    private final ListingQueryService listingQueryService;
+    private final ListingCommandService listingCommandService;
+    private final ListingImageService listingImageService;
+    private final ListingSpecificationService listingSpecificationService;
 
 //    CREATING
 
@@ -40,7 +44,7 @@ public class ListingController {
             @Parameter(description = "Данные о листинге")
             @Valid @RequestBody ListingRequest listingRequest)
     {
-        ListingResponse lr = listingService.createListing(listingRequest);
+        ListingResponse lr = listingCommandService.createListing(listingRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(lr);
     }
 
@@ -52,7 +56,7 @@ public class ListingController {
             @RequestParam("files") List<MultipartFile> files,
 
             @PathVariable UUID id) {
-        ListingResponse lr = listingService.addImageToListing(id, files);
+        ListingResponse lr = listingImageService.addImageToListing(id, files);
         return ResponseEntity.ok(lr);
     }
 
@@ -60,8 +64,9 @@ public class ListingController {
 
     @Operation(summary = "Find listing")
     @GetMapping("/listing/{id}")
-    public ResponseEntity<FullListingResponse> get(@PathVariable UUID id) {
-        FullListingResponse lr = listingService.getListingById(id);
+    public ResponseEntity<FullListingResponse> get(@PathVariable UUID id,
+                                                   @RequestParam(required = false, defaultValue = "USD") String currency) {
+        FullListingResponse lr = listingQueryService.getListingById(id, currency);
         return ResponseEntity.ok(lr);
     }
 
@@ -70,27 +75,28 @@ public class ListingController {
     @PreAuthorize("hasRole('HOST')")
     @GetMapping("/listings/my")
     public ResponseEntity<Page<ListingResponse>> getUserListings(
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        String email = userService.getCurrentUserEmail();
-        Page<ListingResponse> lr = listingService.getUsersListings(email, pageable);
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false, defaultValue = "USD") String currency) {
+        Page<ListingResponse> lr = listingQueryService.getUsersListings(pageable, currency);
         return ResponseEntity.ok(lr);
     }
 
     @Operation(summary = "Find all listings")
     @GetMapping("/listings")
-    public ResponseEntity<Page<ShortListingResponse>> getListings(
+    public ResponseEntity<PageResponse<ShortListingResponse>> getListings(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable) {
-        Page<ShortListingResponse> llr = listingService.getAll(pageable);
+        PageResponse<ShortListingResponse> llr = listingQueryService.getAll(pageable);
         return ResponseEntity.ok(llr);
     }
 
     @Operation(summary = "find all by filter")
     @GetMapping("/listings/search")
-    public ResponseEntity<Page<ListingResponse>> getListingsByFilter(
+    public ResponseEntity<PageResponse<ListingResponse>> getListingsByFilter(
+            @RequestParam(required = false, defaultValue = "USD") String currency,
             @Valid ListingFilterRequest listingFilterRequest,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<ListingResponse> llr = listingService.getListingsByFilter(listingFilterRequest, pageable);
+        PageResponse<ListingResponse> llr = listingSpecificationService.getListingsByFilter(currency, listingFilterRequest, pageable);
 
         return ResponseEntity.ok(llr);
     }
@@ -101,7 +107,7 @@ public class ListingController {
     @PreAuthorize("hasRole('HOST')")
     @PutMapping("/listing/{id}")
     public ResponseEntity<ListingResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateListingRequest listingRequest) {
-        ListingResponse lr = listingService.updateListing(listingRequest, id);
+        ListingResponse lr = listingCommandService.updateListing(listingRequest, id);
         return ResponseEntity.ok(lr);
     }
 
@@ -111,6 +117,6 @@ public class ListingController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('HOST')")
     @DeleteMapping("/listing/{id}")
     public void delete(@PathVariable UUID id) {
-        listingService.deleteListingById(id);
+        listingCommandService.deleteListingById(id);
     }
 }

@@ -6,6 +6,7 @@ import com.library.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -60,7 +61,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html")
                         .permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/stripe-notifications").permitAll()
+                        .requestMatchers("/api/v1/stripe-notifications").permitAll()
+                        .requestMatchers(HttpMethod.GET, "api/v1/listings", "api/v1/listings/search", "api/v1/listing/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 ).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

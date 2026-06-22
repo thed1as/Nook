@@ -16,6 +16,7 @@ public class ListingFilterRequest {
 
     @Positive
     private BigDecimal maxPrice;
+    private String currency;
 
     private String country;
     private String city;

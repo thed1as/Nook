@@ -31,6 +31,9 @@ public class Booking {
     @Column(precision = 38, scale = 2)
     private BigDecimal totalPrice;
 
+    @Column(nullable = false, length = 3)
+    private String currency;
+
     @Enumerated(EnumType.STRING)
     private Status status;
 

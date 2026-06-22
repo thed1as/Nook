@@ -26,11 +26,13 @@ CREATE TABLE listing
     listing_id      uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at      timestamp(6),
     description     varchar(255),
-    price_per_night numeric(38, 2),
+    price_per_night numeric(38, 2) NOT NULL,
+    currency       varchar(3) NOT NULL,
     average_rating  numeric(3, 2) DEFAULT 0.0,
     reviews_count   bigInt DEFAULT 0,
     title           varchar(255),
     updated_at      timestamp(6),
+    version         BIGINT NOT NULL,
 
     location_id     BIGINT,
     user_id         uuid,
@@ -50,6 +52,7 @@ CREATE TABLE booking
     created_at     timestamp(6),
     status         varchar(255),
     total_price    numeric(38, 2),
+    currency       varchar(3),
     updated_at     timestamp(6),
 
     listing_id     uuid,
@@ -94,6 +97,11 @@ CREATE TABLE payment
 
     CONSTRAINT fk_payment_user
         FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE processed_webhook_events(
+    event_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    processed_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE listing_image
@@ -174,3 +182,15 @@ CREATE UNIQUE INDEX idx_users_email
 
 CREATE INDEX idx_location_city
     ON location(city);
+
+CREATE INDEX idx_users_id
+    ON booking(user_id);
+
+CREATE INDEX idx_listings_id
+    ON booking(listing_id);
+
+CREATE INDEX idx_stripe_id
+    ON payment(stripe_id);
+
+CREATE INDEX idx_listing_id
+    ON reviews(listing_listing_id);

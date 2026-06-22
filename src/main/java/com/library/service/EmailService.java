@@ -1,10 +1,11 @@
 package com.library.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -13,11 +14,13 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Async
 public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    private final String from = "nook@nook.mail";
+    @Value("${spring.mail.mail-sender-name}")
+    private String from;
 
     public void sendBookingConfirmation(
             String to,
@@ -37,7 +40,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("Booking confirmation sent to: {}", to);
         } catch (Exception e) {
-            log.error("Error while sending email to: {}, {}", to, e.getMessage());
+            log.error("Booking Error while sending email to: {}, {}", to, e.getMessage());
         }
     }
 
@@ -58,7 +61,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("Payment confirmation sent to: {}", to);
         } catch (Exception e) {
-            log.error("Error while sending email to: {}, {}", to, e.getMessage());
+            log.error("Payment Error while sending email to: {}", to, e);
         }
     }
 
@@ -71,9 +74,9 @@ public class EmailService {
             message.setText(buildBookingCancellation(listingTitle));
 
             mailSender.send(message);
-            log.info("Booking cancelation sent to: {}", to);
+            log.info("Booking cancellation sent to: {}", to);
         } catch (Exception e) {
-            log.error("Error while sending email to: {}, {}", to, e.getMessage());
+            log.error("Error while sending email to: {}", to, e);
         }
     }
 

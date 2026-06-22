@@ -4,18 +4,22 @@ services:
     image: postgres:15-alpine
     container_name: nook-db
     environment:
-      # Берем логин и пароль для создания базы из .env
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: nook_db
     ports:
       - "5432:5432"
     healthcheck:
-      # Проверка здоровья тоже использует переменную
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d nook_db"]
       interval: 5s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:8
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
 
   minio:
     image: minio/minio
@@ -24,7 +28,6 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      # Берем ключи для MinIO из .env
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
@@ -37,16 +40,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      # Передаем все секреты из .env внутрь Spring Boot
       DB_HOST: db
+      REDIS_HOST: redis
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       MINIO_HOST: minio
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET}
-      SECURITY_KEY: ${SECURITY_KEY}
+      ACCESS_SECURITY_KEY: ${ACCESS_SECURITY_KEY}
+      REFRESH_SECURITY_KEY: ${REFRESH_SECURITY_KEY}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}

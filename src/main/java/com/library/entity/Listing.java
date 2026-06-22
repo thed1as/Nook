@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.*;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,8 @@ public class Listing {
 
     @Column(precision = 38, scale = 2)
     private BigDecimal pricePerNight;
+
+    private String currency;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -66,6 +69,9 @@ public class Listing {
     @Fetch(FetchMode.SUBSELECT)
     @BatchSize(size = 20)
     private List<ListingImage> listingImages = new ArrayList<>();
+
+    @Version
+    private Long version;
 
 
 //    helper methods

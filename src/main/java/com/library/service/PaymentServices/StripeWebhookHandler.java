@@ -1,77 +1,49 @@
-package com.library.service;
+package com.library.service.PaymentServices;
 
-import com.library.dto.exception.customException.forbiden.ForbiddenUserException;
+import com.library.dto.exception.customException.paymentExceptions.PaymentFailedException;
 import com.library.dto.exception.customException.paymentExceptions.PaymentNotFoundException;
-import com.library.dto.payment.PaymentRequest;
-import com.library.dto.payment.PaymentResponse;
 import com.library.entity.Booking;
 import com.library.entity.Payment;
 import com.library.enums.PaymentStatus;
 import com.library.enums.Status;
-import com.library.event.entities.BookingCancelEvent;
 import com.library.event.entities.BookingConfirmedEvent;
 import com.library.event.entities.PaymentCompletedEvent;
-import com.library.mapper.PaymentMapper;
 import com.library.repository.BookingRepository;
 import com.library.repository.PaymentRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
+import com.stripe.model.PaymentIntent;
+import com.stripe.net.Webhook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PaymentService {
+public class StripeWebhookHandler {
+
+    @Value("${stripe.api.webhook-secret}")
+    private String webhookSecret;
+
     private final PaymentRepository paymentRepository;
-    private final UserService userService;
     private final BookingRepository bookingRepository;
-    private final StripeService stripeService;
-    private final PaymentTransactionService txPayment;
-    private final PaymentMapper paymentMapper;
     private final ApplicationEventPublisher eventPublisher;
-
-    @Value("${app.booking.cancellation-window-days}")
-    private int cancellationWindowDays;
-
-    public String initializePayment(Booking booking, PaymentRequest paymentRequest) {
-        String stripeId = stripeService.createPayment(booking.getTotalPrice(), paymentRequest.getCurrency());
-
-        txPayment.savePendingPayment(booking, paymentRequest, stripeId);
-        return stripeId;
-    }
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
-    void processRefundForCancellationBooking(Payment payment) {
-        stripeService.refundPayment(payment.getStripeId());
-
-        payment.setStatus(PaymentStatus.CANCELLED);
-        paymentRepository.save(payment);
-
-        eventPublisher.publishEvent(new BookingCancelEvent(
-                payment.getBooking().getBookingId(),
-                payment.getUser().getEmail(),
-                payment.getBooking().getListing().getTitle()
-        ));
-    }
-
-    @Transactional
-    public void handlePaymentSuccess(String stripeId) {
+    protected void handlePaymentSuccess(String stripeId) {
         paymentRepository.findByStripeId(stripeId)
                 .ifPresentOrElse(
                         payment -> {
                             if(payment.getStatus() == PaymentStatus.COMPLETED) {
-                                log.info("Payment already completed: {}", stripeId);
+                                log.debug("Payment already completed: {}", stripeId);
                                 return;
                             }
                             payment.setStatus(PaymentStatus.COMPLETED);
@@ -105,7 +77,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public void handlePaymentFailure(String stripeId) {
+    protected void handlePaymentFailure(String stripeId) {
         Payment payment = paymentRepository.findByStripeId(stripeId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
 
@@ -115,26 +87,66 @@ public class PaymentService {
 
         payment.setStatus(PaymentStatus.FAILED);
         paymentRepository.save(payment);
+
+        log.info("Payment marked as FAILED in DB for stripeId: {}", stripeId);
     }
 
-    @Transactional(readOnly = true)
-    public Page<PaymentResponse> getPaymentsByBookingId(UUID bookingId, Pageable pageable) {
+    @Transactional
+    public void handleWebHook(String payload, String sigHeader) {
+        Event event;
 
-        String userEmail = userService.getCurrentUserEmail();
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        if(!booking.getUser().getEmail().equals(userEmail) && !booking.getListing().getUser().getEmail().equals(userEmail)) {
-            throw new ForbiddenUserException("It's not your booking. Access denied.");
+        try {
+            event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+        } catch (SignatureVerificationException e) {
+            log.warn("SECURITY WARNING: Webhook signature verification failed! Potential malicious request");
+            throw new PaymentFailedException("BAD REQUEST");
         }
 
-        return paymentRepository.findByBooking_BookingId(bookingId, pageable)
-                .map(paymentMapper::toPaymentResponse);
+        String eventId = event.getId();
+        boolean isNewEvent = tryLockEvent(eventId);
+
+        if(!isNewEvent){
+            log.info("Duplicate webhook detected and ignored: {}", eventId);
+            return;
+        }
+
+        try {
+            switch (event.getType()) {
+                case "payment_intent.succeeded" -> {
+                    PaymentIntent paymentIntent = (PaymentIntent) event
+                            .getDataObjectDeserializer()
+                            .getObject()
+                            .orElseThrow();
+
+                    handlePaymentSuccess(paymentIntent.getId());
+                }
+
+                case "payment_intent.payment_failed" -> {
+                    PaymentIntent paymentIntent = (PaymentIntent) event
+                            .getDataObjectDeserializer()
+                            .getObject()
+                            .orElseThrow();
+
+                    handlePaymentFailure(paymentIntent.getId());
+                }
+                default -> log.debug("Unhandled event: {}", event.getId());
+            }
+        } catch (Exception e) {
+            log.error("Error processing webhook event: {}:",
+                    event.getType(), e);
+            throw new PaymentFailedException("Payment failed: " + e.getMessage());
+        }
     }
 
-    @Transactional(readOnly = true)
-    public Page<PaymentResponse> getUserPayments(Pageable pageable) {
-        String email = userService.getCurrentUserEmail();
-        return paymentRepository.findByUser_Email(email, pageable)
-                .map(paymentMapper::toPaymentResponse);
+    private boolean tryLockEvent(String eventId) {
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO processed_webhook_events (event_id, processed_at) VALUES (?, NOW())",
+                    eventId
+            );
+            return true;
+        } catch (DuplicateKeyException e) {
+            return false;
+        }
     }
 }

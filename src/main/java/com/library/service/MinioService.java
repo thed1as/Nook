@@ -1,10 +1,12 @@
 package com.library.service;
 
+import com.library.dto.exception.customException.ImageException.ImageStorageException;
 import com.library.minio.MinioProperties;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,12 +15,12 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MinioService {
 
     private final MinioClient minioClient;
     private final MinioProperties properties;
 
-    @Transactional
     public String uploadFile(MultipartFile file) {
         if(file.isEmpty() || file == null) {
             throw new IllegalArgumentException("File is empty");
@@ -38,11 +40,11 @@ public class MinioService {
             return properties.getUrl() + "/" + properties.getBucket() + "/" + fileName;
 
         } catch (Exception e) {
-            throw new RuntimeException("Error uploading file", e);
+            log.error("Image upload failed", e);
+            throw new ImageStorageException("Error uploading file", e);
         }
     }
 
-    @Transactional
     public void deleteFile(String url) {
         try{
             String baseUrl = properties.getUrl() + "/" + properties.getBucket() + "/";
@@ -57,6 +59,7 @@ public class MinioService {
                             .object(objectName).build()
             );
         } catch (Exception e) {
+            log.error("Delete file failed", e);
             throw new RuntimeException("Error: ", e);
         }
     }

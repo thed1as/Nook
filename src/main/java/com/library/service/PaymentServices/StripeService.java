@@ -1,4 +1,4 @@
-package com.library.service;
+package com.library.service.PaymentServices;
 
 import com.library.dto.exception.customException.paymentExceptions.PaymentFailedException;
 import com.stripe.exception.StripeException;
@@ -10,14 +10,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @Slf4j
 public class StripeService {
 
+
     public String createPayment(BigDecimal amount, String currency) {
         try {
-            long amountInCents = amount
+            long amountInCents = amount.setScale(2, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
                     .longValue();
 
@@ -38,7 +40,7 @@ public class StripeService {
             PaymentIntent paymentIntent = PaymentIntent.create(params);
             return paymentIntent.getId();
         } catch (StripeException ex) {
-            log.error("Stripe error during createPaymentIntent: {}", ex.getMessage());
+            log.error("Stripe API error during createPaymentIntent for amount: {}", amount, ex);
             throw new PaymentFailedException("Payment failed: " + ex.getMessage());
         }
     }
@@ -50,9 +52,9 @@ public class StripeService {
 
             Refund refund = Refund.create(params);
 
-            log.info("Refund created: {}", refund.getId());
+            log.info("Refund successfully created in Stripe: {}", refund.getId());
         } catch (StripeException ex) {
-            log.error("Stripe error during refundPament: {}", ex.getMessage());
+            log.error("Stripe API error during refundPayment for stripe Id: {}", stripePaymentId, ex);
             throw new PaymentFailedException("Payment failed: " + ex.getMessage());
        }
     }
@@ -62,7 +64,7 @@ public class StripeService {
             PaymentIntent paymentIntent = PaymentIntent.retrieve(stripePaymentId);
             return paymentIntent.getStatus();
         } catch (StripeException ex) {
-            log.error("Stripe error during getPaymentStatus: {}", ex.getMessage());
+            log.error("Stripe API error during getPaymentStatus for stripe with Id: {} ", stripePaymentId, ex);
             throw new PaymentFailedException("Payment failed: " + ex.getMessage());
         }
     }

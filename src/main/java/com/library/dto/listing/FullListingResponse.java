@@ -27,4 +27,5 @@ public class FullListingResponse {
     private Long reviewsCount;
     private Double averageRating;
     private BigDecimal pricePerNight;
+    private String currency;
 }

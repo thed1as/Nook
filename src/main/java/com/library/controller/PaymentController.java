@@ -1,11 +1,8 @@
 package com.library.controller;
 
 import com.library.dto.payment.PaymentResponse;
-import com.library.service.PaymentService;
-import com.stripe.exception.SignatureVerificationException;
-import com.stripe.model.Event;
-import com.stripe.model.PaymentIntent;
-import com.stripe.net.Webhook;
+import com.library.service.PaymentServices.PaymentService;
+import com.library.service.PaymentServices.StripeWebhookHandler;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @Tag(name = "Payment", description = "Payment API")
-@RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentController {
@@ -32,46 +28,14 @@ public class PaymentController {
     private String webhookSecret;
 
     private final PaymentService paymentService;
+    private final StripeWebhookHandler webhookHandler;
 
     @Hidden
     @PostMapping("/stripe-notifications")
     public ResponseEntity<String> handleWebHook(
             @RequestBody String payload,
             @RequestHeader("Stripe-Signature") String sigHeader) {
-        Event event;
-
-        try {
-            event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
-        } catch (SignatureVerificationException e) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        try {
-            switch (event.getType()) {
-                case "payment_intent.succeeded" -> {
-                    PaymentIntent paymentIntent = (PaymentIntent) event
-                            .getDataObjectDeserializer()
-                            .getObject()
-                            .orElseThrow();
-
-                    paymentService.handlePaymentSuccess(paymentIntent.getId());
-                    log.info("Payment successful {}", paymentIntent.getId());
-                }
-
-                case "payment_intent.payment_failed" -> {
-                    PaymentIntent paymentIntent = (PaymentIntent) event
-                            .getDataObjectDeserializer()
-                            .getObject()
-                            .orElseThrow();
-                    paymentService.handlePaymentFailure(paymentIntent.getId());
-                    log.info("Payment failed {}", paymentIntent.getId());
-                }
-                default -> log.info("Unhandled event: {}", event.getId());
-            }
-        } catch (Exception e) {
-            log.error("Error processing webhook event: {}: {}",
-                    event.getType(), e.getMessage());
-        }
+        webhookHandler.handleWebHook(payload, sigHeader);
         return ResponseEntity.ok().build();
     }
 
