@@ -34,7 +34,7 @@ public class ListingQueryService {
     private final ListingMapper listingMapper;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "listings", key = "#root,.methodName + '_' + #listingId + '_' + #targetCurrency")
+    @Cacheable(value = "listings", key = "#root.methodName + '_' + #listingId + '_' + #targetCurrency")
     public FullListingResponse getListingById(UUID listingId, String targetCurrency) {
         Listing listing = listingRepository.findByDetailedId(listingId)
                 .orElseThrow(() -> new ListingIllegalStateException("No listing with id: " + listingId));

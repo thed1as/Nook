@@ -102,7 +102,7 @@ public class StripeWebhookHandler {
         }
 
         String eventId = event.getId();
-        boolean isNewEvent = tryLockEvent(eventId);
+        boolean isNewEvent = markEventAsProcessed(eventId);
 
         if(!isNewEvent){
             log.info("Duplicate webhook detected and ignored: {}", eventId);
@@ -137,7 +137,7 @@ public class StripeWebhookHandler {
         }
     }
 
-    private boolean tryLockEvent(String eventId) {
+    private boolean markEventAsProcessed(String eventId) {
         try {
             jdbcTemplate.update(
                     "INSERT INTO processed_webhook_events (event_id, processed_at) VALUES (?, NOW())",

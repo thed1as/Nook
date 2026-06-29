@@ -16,6 +16,7 @@ public interface ListingRepository extends JpaRepository<Listing, UUID>, JpaSpec
     @Query("SELECT l FROM Listing l WHERE l.user.userId = :userId")
     List<Listing> findAllByUserId(UUID userId);
 
+    @EntityGraph(attributePaths = {"location", "listingImages"})
     @Query("SELECT l FROM Listing l WHERE l.listingId IN :id")
     List<Listing> findAllDetailedByUserId(@Param("id") List<UUID> ids);
 
@@ -36,8 +37,5 @@ public interface ListingRepository extends JpaRepository<Listing, UUID>, JpaSpec
 
     @Query("SELECT l.listingId FROM Listing l")
     Page<UUID> findAllIds(Pageable pageable);
-
-    @Query("SELECT l FROM Listing l LEFT JOIN FETCH l.location LEFT JOIN FETCH l.user WHERE l.listingId IN :ids")
-    List<Listing> findAllWithRelationByIds(@Param("ids") List<UUID> listingIds);
 
 }

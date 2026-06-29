@@ -71,8 +71,7 @@ public class ListingCommandService {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = "listings", key = "#listingId"),
-            @CacheEvict(value = "filtered_listings", allEntries = true)
+            @CacheEvict(value = "listings", key = "#listingId")
     })
     public ListingResponse updateListing(UpdateListingRequest req,
                                          UUID listingId) {
@@ -106,7 +105,6 @@ public class ListingCommandService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "listings", key = "#listingId"),
-            @CacheEvict(value = "filtered_listings", allEntries = true)
     })
     public void deleteListingById(UUID listingId) {
         UUID userId = userService.getCurrentUserId();
