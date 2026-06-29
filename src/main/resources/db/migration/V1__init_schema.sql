@@ -16,6 +16,7 @@ CREATE TABLE users
     password varchar(255) NOT NULL,
     role     varchar(255) NOT NULL,
     username varchar(255) NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 
     CONSTRAINT users_role_check
         CHECK (role::text = ANY ((ARRAY['USER','HOST','ADMIN'])::text[]))
@@ -33,6 +34,7 @@ CREATE TABLE listing
     title           varchar(255),
     updated_at      timestamp(6),
     version         BIGINT NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     location_id     BIGINT,
     user_id         uuid,
