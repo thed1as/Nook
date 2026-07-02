@@ -49,7 +49,7 @@ public interface ListingMapper {
             return null;
         }
         ListingImage first = listingImages.getFirst();
-        return new ListingImageResponse(first.getListingImageId(), first.getFileName());
+        return new ListingImageResponse(first.getFileName());
     }
 
 

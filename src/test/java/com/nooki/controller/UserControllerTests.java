@@ -68,22 +68,5 @@ public class UserControllerTests extends AbstractControllerTest {
         }
     }
 
-    @Nested
-    @DisplayName("Becoming host (post /user/become_host)")
-    class becomeHost {
-        private final String URL = "/api/v1/user/me/role";
-
-        @Test
-        @DisplayName("request should return 200 and become Host")
-        @WithMockUser(roles = "USER")
-        void validRequest_shouldReturn200AndBecomeHost() throws Exception {
-            mockMvc.perform(post(URL)
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-            ).andExpect(status().isOk());
-            verify(userService).makeHost();
-        }
-    }
-
 //    ADD TEST TO deleteMyAccount
 }

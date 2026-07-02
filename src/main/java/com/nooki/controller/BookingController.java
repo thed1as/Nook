@@ -29,7 +29,7 @@ public class BookingController {
     private final BookingQueryService queryService;
 
     @Operation(summary = "Create booking")
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/booking")
     public ResponseEntity<BookingCheckoutResponse> create(@Valid @RequestBody BookingCheckoutRequest bookingRequest) {
         BookingCheckoutResponse bcr = commandService.create(bookingRequest);
@@ -37,7 +37,7 @@ public class BookingController {
     }
 
     @Operation(summary = "Find booking by id")
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/booking/{id}")
     public ResponseEntity<BookingResponse> get(@PathVariable UUID id) {
         BookingResponse br = queryService.getBookingById(id);
@@ -45,7 +45,7 @@ public class BookingController {
     }
 
     @Operation(summary = "Find bookings")
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/bookings/my")
     public ResponseEntity<Page<BookingResponse>> getBookings(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -54,7 +54,7 @@ public class BookingController {
     }
 
     @Operation(summary = "Find listing bookings")
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/listings/{id}/bookings")
     public ResponseEntity<Page<BookingResponse>> getListings(@PathVariable UUID id,
                                                              @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -63,7 +63,7 @@ public class BookingController {
     }
 
     @Operation(summary = "Cancel booking")
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/bookings/{id}")
     public ResponseEntity<BookingResponse> cancel(@PathVariable UUID id) {
         BookingResponse br = commandService.cancel(id);

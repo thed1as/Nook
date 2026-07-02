@@ -133,21 +133,6 @@ CREATE TABLE reviews
         FOREIGN KEY (user_user_id) REFERENCES users(user_id)
 );
 
-CREATE INDEX idx_listing_location_id ON listing (location_id);
-CREATE INDEX idx_listing_user_id     ON listing (user_id);
-
-CREATE INDEX idx_booking_listing_id  ON booking (listing_id);
-CREATE INDEX idx_booking_user_id     ON booking (user_id);
-
-CREATE INDEX idx_listing_image_listing_id ON listing_image (listing_id);
-
-CREATE INDEX idx_reviews_listing_id  ON reviews (listing_listing_id);
-CREATE INDEX idx_reviews_user_id     ON reviews (user_user_id);
-
-CREATE INDEX idx_payment_user_id     ON payment (user_id);
-
-CREATE INDEX idx_payment_stripe_id   ON payment (stripe_id);
-
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 ALTER TABLE booking
@@ -158,6 +143,16 @@ ALTER TABLE booking
         );
 
 -- indexes
+
+CREATE INDEX idx_listing_location_id ON listing (location_id);
+
+
+CREATE INDEX idx_listing_image_listing_id ON listing_image (listing_id);
+
+CREATE INDEX idx_reviews_user_id     ON reviews (user_user_id);
+
+CREATE INDEX idx_payment_user_id     ON payment (user_id);
+
 CREATE INDEX idx_booking_listing_status_dates
     ON booking(listing_id, status, check_in_date, check_out_date);
 

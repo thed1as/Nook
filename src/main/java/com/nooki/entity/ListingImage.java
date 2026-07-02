@@ -22,5 +22,5 @@ public class ListingImage {
 //    Connections
     @ManyToOne
     @JoinColumn(name = "listing_id")
-    private Listing listingImg;
+    private Listing listing;
 }

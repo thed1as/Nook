@@ -65,7 +65,7 @@ public class Listing {
     @Column(nullable = false)
     private Long reviewsCount = 0L;
 
-    @OneToMany(mappedBy = "listingImg", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
     @BatchSize(size = 20)
     private List<ListingImage> listingImages = new ArrayList<>();
@@ -101,17 +101,17 @@ public class Listing {
     public void addListingImage(List<ListingImage> listingImage) {
         for(ListingImage i : listingImage) {
             listingImages.add(i);
-            i.setListingImg(this);
+            i.setListing(this);
         }
     }
 
     public void addListingImage(ListingImage listingImage) {
         listingImages.add(listingImage);
-        listingImage.setListingImg(this);
+        listingImage.setListing(this);
     }
 
     public void removeListingImage(ListingImage listingImage) {
         listingImages.remove(listingImage);
-        listingImage.setListingImg(null);
+        listingImage.setListing(null);
     }
 }

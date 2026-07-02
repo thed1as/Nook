@@ -58,7 +58,7 @@ public class ListingDomainServiceTests {
         void existsListing_shouldReturnDetailedListing() {
             Listing l = new Listing();
             l.setListingId(listingId);
-            when(listingRepository.findByDetailedId(listingId))
+            when(listingRepository.findByIdWithLock(listingId))
                     .thenReturn(Optional.of(l));
             Listing result = listingDomainService.getListingOrThrow(listingId);
             assertThat(l).isEqualTo(result);
@@ -66,7 +66,7 @@ public class ListingDomainServiceTests {
 
         @Test
         @DisplayName("existing listing should return listing detailed")
-        void existsListing_shouldThrowListingNotFoundExcception() {
+        void existsListing_shouldThrowListingNotFoundException() {
 
             assertThatThrownBy(() -> listingDomainService.getListingOrThrow(listingId))
                     .isInstanceOf(ListingNotFoundException.class)

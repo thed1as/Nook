@@ -38,7 +38,7 @@ public class ListingController {
 //    CREATING
 
     @Operation(summary = "Create listing")
-    @PreAuthorize("hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping(value = "/listing")
     public ResponseEntity<ListingResponse> create(
             @Parameter(description = "Данные о листинге")
@@ -49,7 +49,7 @@ public class ListingController {
     }
 
     @Operation(summary = "Add image to the listing")
-    @PreAuthorize("hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping(value = "/listing/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ListingResponse> addImageToListing(
             @Parameter(description = "Изображение (jpg, png)")
@@ -58,6 +58,15 @@ public class ListingController {
             @PathVariable UUID id) {
         ListingResponse lr = listingImageService.addImageToListing(id, files);
         return ResponseEntity.ok(lr);
+    }
+
+    @Operation(summary = "Delete image from the listing")
+    @PreAuthorize("hasRole('USER')")
+    @DeleteMapping(value = "/listing/{listingId}/images/{imageId}")
+    public ResponseEntity<Void> deleteImageFromListing(@PathVariable UUID listingId,
+                                                                  @PathVariable Long imageId) {
+        listingImageService.removeImage(listingId, imageId);
+        return ResponseEntity.noContent().build();
     }
 
     //    SEARCHING
@@ -72,7 +81,7 @@ public class ListingController {
 
 
     @Operation(summary = "Find users listings by id")
-    @PreAuthorize("hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/listings/my")
     public ResponseEntity<Page<ListingResponse>> getUserListings(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
@@ -104,7 +113,7 @@ public class ListingController {
 //    UPDATE
 
     @Operation(summary = "Update listing by id")
-    @PreAuthorize("hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/listing/{id}")
     public ResponseEntity<ListingResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateListingRequest listingRequest) {
         ListingResponse lr = listingCommandService.updateListing(listingRequest, id);
@@ -114,7 +123,7 @@ public class ListingController {
 //    DELETE
 
     @Operation(summary = "Delete listing by id")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('HOST')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @DeleteMapping("/listing/{id}")
     public void delete(@PathVariable UUID id) {
         listingCommandService.deleteListingById(id);

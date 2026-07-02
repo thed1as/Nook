@@ -1,6 +1,7 @@
 package com.nooki.exception;
 
 import com.nooki.dto.exception.ApiError;
+import com.nooki.dto.exception.customException.ImageException.ImageStorageException;
 import com.nooki.dto.exception.customException.LocationException.LocationException;
 import com.nooki.dto.exception.customException.bookingException.BookingAccessDeniedException;
 import com.nooki.dto.exception.customException.bookingException.BookingCancelException;
@@ -152,6 +153,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(LocationException.class)
     public ResponseEntity<ApiError> handle(LocationException e) {
+        ApiError error = new ApiError(404, e.getMessage(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+//    LISTING IMAGE EXCEPTIONS
+
+    @ExceptionHandler(ImageStorageException.class)
+    public ResponseEntity<ApiError> handle(ImageStorageException e) {
         ApiError error = new ApiError(404, e.getMessage(), LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }

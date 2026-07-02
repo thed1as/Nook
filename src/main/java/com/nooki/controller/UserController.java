@@ -29,16 +29,9 @@ public class UserController {
         return ResponseEntity.ok(ur);
     }
 
-    @Operation(summary = "become a host")
-    @PostMapping("/user/me/role")
-    @PreAuthorize("hasRole('USER')")
-    public void updateRoleToHost() {
-        userService.makeHost();
-    }
-
     @Operation(summary = "delete my account")
     @PostMapping("/user/my/delete")
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     public void deleteMyAccount(@RequestHeader("Authorization") String authHeader) {
         userService.deleteMyAccountById();
         jwtService.blackListToken(authHeader);

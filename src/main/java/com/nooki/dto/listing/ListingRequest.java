@@ -1,6 +1,5 @@
 package com.nooki.dto.listing;
 
-import com.nooki.dto.ListingImage.ListingImageRequest;
 import com.nooki.dto.location.LocationRequest;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -10,8 +9,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 public class ListingRequest {
@@ -31,9 +28,6 @@ public class ListingRequest {
     @NotBlank(message = "currency cannot be null")
     @Size(max = 3)
     private String currency;
-
-    @Schema(description = "Listing Images")
-    private List<ListingImageRequest> listingImageRequests = new ArrayList<>();
 
     @Schema(description = "Listing Location")
     @NotNull(message = "listing location is required")

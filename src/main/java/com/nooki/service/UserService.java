@@ -5,7 +5,6 @@ import com.nooki.dto.exception.customException.userException.UserNotFoundExcepti
 import com.nooki.dto.user.UserResponse;
 import com.nooki.entity.CustomUserDetails;
 import com.nooki.entity.User;
-import com.nooki.enums.Role;
 import com.nooki.mapper.UserMapper;
 import com.nooki.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -63,18 +62,5 @@ public class UserService {
         }
 
         return null;
-    }
-
-    @Transactional
-    public boolean makeHost() {
-        User user = userRepository.findById(getCurrentUserId()).orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        if(user.getRole().equals(Role.HOST)) {
-            throw new UserIllegalStateException("You're already host");
-        }
-
-        user.setRole(Role.HOST);
-        userRepository.save(user);
-        return true;
     }
 }

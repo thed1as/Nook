@@ -23,7 +23,7 @@ import java.util.UUID;
 public class  ReviewController {
     private final ReviewService reviewService;
 
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/listing/{id}/reviews")
     public ResponseEntity<Page<ReviewResponse>> getReviews(@PathVariable UUID id,
                                                            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -31,7 +31,7 @@ public class  ReviewController {
         return ResponseEntity.ok(prs);
     }
 
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/listing/{listingId}/reviews")
     public ResponseEntity<ReviewResponse> createReview(@Valid @RequestBody ReviewRequest reviewRequest,
                                                        @PathVariable UUID listingId) {
@@ -39,7 +39,7 @@ public class  ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(rr);
     }
 
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/listing/reviews/{reviewId}")
     public ResponseEntity<ReviewResponse> updateReview(@Valid @RequestBody UpdateReviewRequest updateReviewRequest,
                                                        @PathVariable Long reviewId) {
@@ -47,7 +47,7 @@ public class  ReviewController {
         return ResponseEntity.ok(rr);
     }
 
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/listing/reviews/{reviewId}")
     public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);

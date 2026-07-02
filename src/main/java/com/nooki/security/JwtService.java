@@ -116,6 +116,6 @@ public class JwtService {
     }
 
     public boolean isTokenBlackListed(String token) {
-        return Boolean.TRUE.equals(tokenStorage.hasKey("blacklist:" + token));
+        return tokenStorage.hasKey("blacklist:" + token);
     }
 }

@@ -2,9 +2,9 @@ WITH
     host_data AS (
         SELECT
             gen_random_uuid() AS user_id,
-            'bulk_host_' || i || '@example.com' AS email,
+            'bulk_hostUsers_' || i || '@example.com' AS email,
             '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK4.6mWqKWNG7h5cH5IE8Zas6' AS password,
-            'HOST' AS role,
+            'USER' AS role,
             'host_runner_' || i AS username,
             i AS rn
         FROM generate_series(1, 1000) AS i

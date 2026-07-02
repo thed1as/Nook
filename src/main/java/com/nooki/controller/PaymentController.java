@@ -39,7 +39,7 @@ public class PaymentController {
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/payments/booking/{bookingId}")
     public ResponseEntity<Page<PaymentResponse>> getPayments(@PathVariable("bookingId") UUID bookingId,
                                                              @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -47,7 +47,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentResponses);
     }
 
-    @PreAuthorize("hasRole('USER') or hasRole('HOST')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/payments/my")
     public ResponseEntity<Page<PaymentResponse>> getMyPayments(@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<PaymentResponse> paymentResponses = paymentService.getUserPayments(pageable);
