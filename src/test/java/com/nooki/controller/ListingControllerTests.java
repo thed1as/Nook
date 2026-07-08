@@ -111,7 +111,7 @@ public class ListingControllerTests extends AbstractControllerTest {
             FullListingResponse lr = new FullListingResponse();
             lr.setListingId(listingId);
 
-            when(queryService.getListingById(listingId, currency)).thenReturn(lr);
+            when(queryService.getPublicListingById(listingId, currency)).thenReturn(lr);
 
             mockMvc.perform(get(URL)
                     .with(csrf())
@@ -124,7 +124,7 @@ public class ListingControllerTests extends AbstractControllerTest {
         @DisplayName("non-existing listing return 404")
         @WithMockUser(roles = "USER")
         void nonExistingListing_shouldReturn404() throws Exception {
-            when(queryService.getListingById(listingId, currency)).thenThrow(EntityNotFoundException.class);
+            when(queryService.getPublicListingById(listingId, currency)).thenThrow(EntityNotFoundException.class);
 
             mockMvc.perform(get(URL)
                     .with(csrf())

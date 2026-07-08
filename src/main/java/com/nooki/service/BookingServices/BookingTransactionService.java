@@ -8,6 +8,7 @@ import com.nooki.dto.payment.PaymentRequest;
 import com.nooki.entity.Booking;
 import com.nooki.entity.Listing;
 import com.nooki.entity.User;
+import com.nooki.enums.PaymentStatus;
 import com.nooki.enums.Status;
 import com.nooki.repository.BookingRepository;
 import com.nooki.repository.ListingRepository;
@@ -15,6 +16,7 @@ import com.nooki.repository.UserRepository;
 import com.nooki.service.CurrencyService;
 import com.nooki.service.PaymentServices.PaymentService;
 import com.nooki.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -108,5 +110,18 @@ public class BookingTransactionService {
             booking.setStatus(Status.CANCELLED);
             bookingRepository.save(booking);
         });
-        log.info("Booking {} was marked as CANCELLED due to initialization failure", bookingId);    }
+        log.info("Booking {} was marked as CANCELLED due to initialization failure", bookingId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void cancelBookingBySystem(UUID bookingId){
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found: " + bookingId));
+        booking.setStatus(Status.CANCELLED);
+
+        if(booking.getPayment().getStatus().equals(PaymentStatus.COMPLETED)){
+            paymentService.processRefundForCancellationBooking(booking.getPayment());
+        }
+    }
 }
+

@@ -47,7 +47,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 new RateLimiterRule(builder.matcher(HttpMethod.POST, "/api/listings/{id}/images"), 150, 3600),
 
                 new RateLimiterRule(builder.matcher(HttpMethod.POST, "/api/booking"), 30, 3600),
-                new RateLimiterRule(builder.matcher(HttpMethod.DELETE, "/api/booking/{id}"), 20, 3600)
+                new RateLimiterRule(builder.matcher(HttpMethod.DELETE, "/api/booking/{id}"), 20, 3600),
+
+                new RateLimiterRule(builder.matcher(HttpMethod.POST, "/listings/{id}/reports"), 5, 3600),
+                new RateLimiterRule(builder.matcher(HttpMethod.GET, "/reports/{id}/resolve"), 20, 36000),
+                new RateLimiterRule(builder.matcher(HttpMethod.GET, "/reports/me"), 10, 36000)
         );
     }
 

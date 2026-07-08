@@ -30,7 +30,7 @@ public class RedisConfig {
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
-        cacheConfigurations.put("filtered_listings", redisCacheConfiguration.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigurations.put("filtered_listings", redisCacheConfiguration.entryTtl(Duration.ofMinutes(5)));
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(redisCacheConfiguration)
                 .withInitialCacheConfigurations(cacheConfigurations)

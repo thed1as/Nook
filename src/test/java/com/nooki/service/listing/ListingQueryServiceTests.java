@@ -1,28 +1,17 @@
 package com.nooki.service.listing;
 
 import com.nooki.dto.PageResponse;
-import com.nooki.dto.exception.customException.listingException.ListingCancelException;
-import com.nooki.dto.exception.customException.listingException.ListingException;
 import com.nooki.dto.exception.customException.listingException.ListingIllegalStateException;
 import com.nooki.dto.listing.*;
-import com.nooki.dto.location.LocationRequest;
-import com.nooki.dto.location.LocationResponse;
 import com.nooki.dto.review.ReviewResponse;
 import com.nooki.entity.*;
 import com.nooki.mapper.ListingMapper;
 import com.nooki.repository.ListingRepository;
 import com.nooki.repository.ReviewRepository;
-import com.nooki.repository.UserRepository;
 import com.nooki.service.CurrencyService;
-import com.nooki.service.ListingServices.ListingCommandService;
-import com.nooki.service.ListingServices.ListingDomainService;
-import com.nooki.service.ListingServices.ListingImageService;
 import com.nooki.service.ListingServices.ListingQueryService;
-import com.nooki.service.LocationService;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.nooki.repository.BookingRepository;
 import com.nooki.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +24,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
@@ -110,7 +98,7 @@ public class ListingQueryServiceTests {
             when(listingMapper.toFullListingResponse(listing, list))
                     .thenReturn(expectedResponse);
 
-            FullListingResponse result = listingQueryService.getListingById(listingId, targetCurrency);
+            FullListingResponse result = listingQueryService.getPublicListingById(listingId, targetCurrency);
 
             verify(listingRepository, times(1)).findByDetailedId(listingId);
 
@@ -125,7 +113,7 @@ public class ListingQueryServiceTests {
         void listingNotFound_shouldThrowListingIllegalStateException() {
             UUID listingId = UUID.randomUUID();
             String targetCurr = "USD";
-            assertThatThrownBy(() -> listingQueryService.getListingById(listingId, targetCurr))
+            assertThatThrownBy(() -> listingQueryService.getPublicListingById(listingId, targetCurr))
                     .isInstanceOf(ListingIllegalStateException.class)
                     .hasMessage("No listing with id: " + listingId);
         }

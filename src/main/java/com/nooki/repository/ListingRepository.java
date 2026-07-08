@@ -32,7 +32,7 @@ public interface ListingRepository extends JpaRepository<Listing, UUID>, JpaSpec
     Optional<Listing> findByDetailedId(@Param("id") UUID id);
 
     @EntityGraph(attributePaths = {"location", "user"})
-    @Query("SELECT l FROM Listing l WHERE l.listingId IN :ids")
+    @Query("SELECT l FROM Listing l WHERE l.listingId IN :ids AND l.listingStatus <> 'SUSPENDED'")
     List<Listing> findAllByDetailedIds(@Param("ids") List<UUID> ids);
 
     @Query("SELECT l.listingId FROM Listing l")

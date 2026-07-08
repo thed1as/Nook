@@ -88,4 +88,17 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT b.bookingId FROM Booking b WHERE b.user.userId = :userId")
     Page<UUID> findAllIdsOfUser(Pageable pageable,@Param("userId") UUID userId);
+
+    @Query("SELECT b.bookingId FROM Booking b WHERE b.listing.listingId = :listingId " +
+            "AND b.status IN ('PENDING', 'CONFIRMED') " +
+            "AND b.checkInDate > CURRENT_TIMESTAMP")
+    @EntityGraph(attributePaths = {
+            "user",
+            "listing",
+            "listing.location",
+            "listing.user",
+            "payment"
+    })
+    List<UUID> findAllIds(@Param("listingId") UUID listingId);
+
 }

@@ -1,11 +1,12 @@
 package com.nooki.controller;
 
-import com.nooki.config.SecurityConfig;
 import com.nooki.dto.payment.PaymentResponse;
 import com.nooki.service.PaymentServices.PaymentService;
+import com.nooki.service.PaymentServices.StripeWebhookHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -25,17 +26,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PaymentController.class)
-@Import({SecurityConfig.class})
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Testing Payment Controller")
 public class PaymentControllerTests extends AbstractControllerTest{
     @MockitoBean
     private PaymentService paymentService;
 
+    @MockitoBean
+    private StripeWebhookHandler webhookHandler;
+
     @Nested
     @DisplayName("Payment (GET /payments/booking/{bookingId}")
     class Get {
         private final UUID bookingId = UUID.randomUUID();
-        private final String URL = "/api/payments/booking/" + bookingId;
+        private final String URL = "/api/v1/payments/booking/" + bookingId;
 
         @Test
         @DisplayName("Return 200, and page of paymentResponse")

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @Tag(name = "Payment", description = "Payment API")
+@RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j

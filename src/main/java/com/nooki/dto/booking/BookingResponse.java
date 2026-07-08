@@ -2,7 +2,7 @@ package com.nooki.dto.booking;
 
 import com.nooki.dto.ListingImage.ListingImageResponse;
 import com.nooki.dto.location.LocationResponse;
-import com.nooki.dto.review.ReviewRequest;
+import com.nooki.dto.review.ReviewResponse;
 import com.nooki.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,7 +31,6 @@ public class BookingResponse {
     private String listingDescription;
     private List<ListingImageResponse> listingImage;
     private LocationResponse location;
-    private List<ReviewRequest> reviewRequests;
 
     private String username;
 

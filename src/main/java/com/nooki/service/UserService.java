@@ -52,6 +52,7 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
+    @Transactional(readOnly = true)
     public UUID getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

@@ -34,16 +34,50 @@ CREATE TABLE listing
     title           varchar(255),
     updated_at      timestamp(6),
     version         BIGINT NOT NULL,
+    status varchar(255),
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     location_id     BIGINT,
     user_id         uuid,
+
+    CONSTRAINT listing_reportStatus_check
+        CHECK (status::text = ANY ((ARRAY['SUSPENDED','PENDING','APPROVED'])::text[])),
 
     CONSTRAINT fk_listing_location
         FOREIGN KEY (location_id) REFERENCES location(location_id),
 
     CONSTRAINT fk_listing_user
         FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+
+CREATE TABLE listing_report
+(
+    report_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    reason    varchar(255) NOT NULL,
+    description TEXT,
+    status     varchar(255) NOT NULL,
+    created_at     timestamp(6) NOT NULL,
+    updated_at     timestamp(6),
+    resolved_at    timestamp(6),
+    reviewed_by      varchar(255),
+    version         BIGINT NOT NULL,
+
+    user_reporter uuid NOT NULL,
+    listing_id uuid NOT NULL,
+
+    CONSTRAINT report_status_check
+        CHECK (status::text = ANY ((ARRAY['OPEN','UNDER_REVIEW','ACCEPTED', 'REJECTED', 'AUTO_RESOLVED'])::text[])),
+
+    CONSTRAINT report_reason_check
+        CHECK (reason::text = ANY ((ARRAY['SPAM','FRAUD','FAKE_LISTING', 'OTHER'])::text[])),
+
+    CONSTRAINT fk_user_reporter
+        FOREIGN KEY (user_reporter) REFERENCES users(user_id),
+
+    CONSTRAINT fk_reported_listing
+        FOREIGN KEY (listing_id) REFERENCES listing(listing_id)
+
 );
 
 CREATE TABLE booking

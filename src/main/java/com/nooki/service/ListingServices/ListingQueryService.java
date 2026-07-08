@@ -2,8 +2,10 @@ package com.nooki.service.ListingServices;
 
 import com.nooki.dto.PageResponse;
 import com.nooki.dto.exception.customException.listingException.ListingIllegalStateException;
+import com.nooki.dto.exception.customException.listingException.ListingNotFoundException;
 import com.nooki.dto.listing.*;
 import com.nooki.entity.*;
+import com.nooki.enums.listingReport.ListingStatus;
 import com.nooki.mapper.ListingMapper;
 import com.nooki.repository.ListingRepository;
 import com.nooki.repository.ReviewRepository;
@@ -35,9 +37,13 @@ public class ListingQueryService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "listings", key = "#root.methodName + '_' + #listingId + '_' + #targetCurrency")
-    public FullListingResponse getListingById(UUID listingId, String targetCurrency) {
+    public FullListingResponse getPublicListingById(UUID listingId, String targetCurrency) {
         Listing listing = listingRepository.findByDetailedId(listingId)
                 .orElseThrow(() -> new ListingIllegalStateException("No listing with id: " + listingId));
+
+        if(listing.getListingStatus() == ListingStatus.SUSPENDED) {
+            throw new ListingNotFoundException("No listing with id: " + listingId);
+        }
 
         BigDecimal convertedPrice = currencyService.convert(
                 listing.getPricePerNight(), listing.getCurrency(), targetCurrency);
@@ -46,6 +52,23 @@ public class ListingQueryService {
                 .findTop3ByListing_ListingIdOrderByCreatedAtDesc(listingId);
 
         FullListingResponse response = listingMapper.toFullListingResponse(listing, top3);
+        response.setPricePerNight(convertedPrice);
+        response.setCurrency(targetCurrency);
+
+        return response;
+    }
+
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "listing_admin", key = "#root.methodName + '_' + #listingId + '_' + #targetCurrency")
+    public ListingResponse getListingByIdForAdmin(UUID listingId, String targetCurrency) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ListingIllegalStateException("No listing with id: " + listingId));
+
+        BigDecimal convertedPrice = currencyService.convert(
+                listing.getPricePerNight(), listing.getCurrency(), targetCurrency);
+
+        ListingResponse response = listingMapper.toListingResponse(listing);
         response.setPricePerNight(convertedPrice);
         response.setCurrency(targetCurrency);
 

@@ -6,6 +6,7 @@ import com.nooki.entity.Listing;
 import com.nooki.entity.ListingSpecification;
 import com.nooki.entity.Location;
 import com.nooki.enums.Status;
+import com.nooki.enums.listingReport.ListingStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,7 @@ public class ListingSpecificationServiceTest extends BaseIntegrationTest{
         l.setPricePerNight(price);
         l.setLocation(loc);
         l.setCurrency(currency);
+        l.setListingStatus(ListingStatus.APPROVED);
         return l;
     }
 

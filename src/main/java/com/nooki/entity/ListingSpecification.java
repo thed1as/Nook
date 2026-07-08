@@ -2,6 +2,7 @@ package com.nooki.entity;
 
 import com.nooki.dto.listing.ListingFilterRequest;
 import com.nooki.enums.Status;
+import com.nooki.enums.listingReport.ListingStatus;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
@@ -16,9 +17,11 @@ public class ListingSpecification {
             if(query.getResultType() != Long.class && query.getResultType() != long.class) {
                 query.distinct(true);
                 root.fetch("location", JoinType.LEFT);
+                root.fetch("user", JoinType.LEFT);
             }
 
             return Specification.allOf(
+                    notSuspended(),
                     priceGreaterThanOrEqualTo(filter.getMinPrice()),
                     priceLessThanOrEqualTo(filter.getMaxPrice()),
                     hasCountry(filter.getCountry()),
@@ -26,6 +29,11 @@ public class ListingSpecification {
                     isAvailableBetween(filter.getCheckIn(), filter.getCheckOut())
             ).toPredicate(root, query, cb);
         };
+    }
+
+    private static Specification<Listing> notSuspended() {
+        return (root, query, cb) ->
+                cb.notEqual(root.get("listingStatus"), ListingStatus.SUSPENDED);
     }
 
     private static Specification<Listing> priceGreaterThanOrEqualTo(BigDecimal minPrice) {

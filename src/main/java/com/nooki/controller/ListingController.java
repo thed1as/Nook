@@ -75,7 +75,7 @@ public class ListingController {
     @GetMapping("/listing/{id}")
     public ResponseEntity<FullListingResponse> get(@PathVariable UUID id,
                                                    @RequestParam(required = false, defaultValue = "USD") String currency) {
-        FullListingResponse lr = listingQueryService.getListingById(id, currency);
+        FullListingResponse lr = listingQueryService.getPublicListingById(id, currency);
         return ResponseEntity.ok(lr);
     }
 
@@ -127,5 +127,14 @@ public class ListingController {
     @DeleteMapping("/listing/{id}")
     public void delete(@PathVariable UUID id) {
         listingCommandService.deleteListingById(id);
+    }
+
+
+    @Operation(summary = "Find listing for admins")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/listings/{id}")
+    public ResponseEntity<ListingResponse> adminGetListing(@PathVariable UUID id){
+        ListingResponse resp = listingQueryService.getListingByIdForAdmin(id, "USD");
+        return ResponseEntity.ok(resp);
     }
 }

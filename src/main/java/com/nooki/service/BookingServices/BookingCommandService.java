@@ -17,11 +17,14 @@ import com.nooki.mapper.BookingMapper;
 import com.nooki.repository.BookingRepository;
 import com.nooki.service.PaymentServices.PaymentService;
 import com.nooki.service.UserService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
+
+import java.util.List;
 import java.util.UUID;
 
 
@@ -91,4 +94,16 @@ public class BookingCommandService {
         log.info("User with {} id successfully cancelled booking with id: {}",  userId, bookingId);
         return bookingMapper.toBookingResponse(booking);
     }
+
+    public void cancelAndRefundAllFutureBookings(UUID listingId) {
+        List<UUID> allActiveBooking = bookingRepository.findAllIds(listingId);
+        for(UUID in : allActiveBooking){
+            try {
+                transactionService.cancelBookingBySystem(in);
+            } catch (Exception e) {
+                log.error("Failed to cancel booking with id {}: {}", in, e.getMessage());
+            }
+        }
+    }
+
 }

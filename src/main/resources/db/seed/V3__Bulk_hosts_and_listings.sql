@@ -29,7 +29,7 @@ WITH
             RETURNING location_id, address
     )
 
-INSERT INTO listing (created_at, description, price_per_night, currency, average_rating, reviews_count, title, updated_at, version, location_id, user_id)
+INSERT INTO listing (created_at, description, price_per_night, currency, average_rating, reviews_count, title, updated_at, status, version, location_id, user_id)
 SELECT
     NOW() - (random() * interval '365 days') AS created_at,
     'Generated elite property description for index benchmarking #' || s.i AS description,
@@ -39,6 +39,7 @@ SELECT
     0 AS reviews_count,
     'Apartment Premium Class #' || s.i AS title,
     NOW() AS updated_at,
+    'APPROVED' as status,
     0 AS version,
     il.location_id,
     h.user_id

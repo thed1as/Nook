@@ -1,5 +1,6 @@
 package com.nooki.entity;
 
+import com.nooki.enums.listingReport.ListingStatus;
 import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
@@ -39,7 +40,9 @@ public class Listing {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ListingStatus listingStatus;
 //    Connections
 
     @ManyToOne(fetch = FetchType.LAZY)
